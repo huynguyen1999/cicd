@@ -2,7 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import * as repositories from './repositories';
-import { User, UserSchema } from './schemas';
+import { Room, RoomSchema, User, UserSchema } from './schemas';
 
 @Global()
 @Module({
@@ -13,7 +13,10 @@ import { User, UserSchema } from './schemas';
       }),
       inject: [ConfigService],
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Room.name, schema: RoomSchema },
+    ]),
   ],
   providers: [...Object.values(repositories)],
   exports: [...Object.values(repositories)],

@@ -4,22 +4,23 @@ import {
   Get,
   Post,
   Put,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { RabbitmqService } from '../../../../../libs/rabbitmq/src';
+import { RabbitmqService } from '@app/rabbitmq';
+import { Response } from 'express';
+import { LocalGuard } from '../../guards';
+import { CurrentUser } from '../../decorators';
+import { User } from '@app/database';
 import {
   ChangePasswordDto,
   LoginDto,
   RegisterDto,
-} from '../../../../../libs/dto/src';
-import { Response } from 'express';
-import { AUTH_COOKIE_NAME } from './auth.constant';
-import { LocalGuard } from '../../guards';
-import { CurrentUser } from '../../decorators';
-import { User } from '../../../../../libs/database/src';
+  AUTH_COOKIE_NAME,
+} from '@app/common';
 
-@Controller()
+@Controller('auth')
 export class AuthController {
   constructor(private readonly rabbitmqService: RabbitmqService) {}
 

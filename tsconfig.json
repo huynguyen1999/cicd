@@ -47,6 +47,12 @@
       ],
       "@app/dto/*": [
         "libs/dto/src/*"
+      ],
+      "@app/constant": [
+        "libs/constant/src"
+      ],
+      "@app/constant/*": [
+        "libs/constant/src/*"
       ]
     }
   }

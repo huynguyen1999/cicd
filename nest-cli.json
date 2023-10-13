@@ -6,7 +6,7 @@
   "root": "apps/gateway",
   "compilerOptions": {
     "deleteOutDir": true,
-    "webpack": false,
+    "webpack": true,
     "tsConfigPath": "apps/gateway/tsconfig.app.json",
     "assets": [],
     "watchAssets": false,
@@ -67,13 +67,13 @@
         "tsConfigPath": "apps/admin/tsconfig.app.json"
       }
     },
-    "dto": {
-      "type": "library",
-      "root": "libs/dto",
-      "entryFile": "index",
-      "sourceRoot": "libs/dto/src",
+    "chat": {
+      "type": "application",
+      "root": "apps/chat",
+      "entryFile": "main",
+      "sourceRoot": "apps/chat/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/dto/tsconfig.lib.json"
+        "tsConfigPath": "apps/chat/tsconfig.app.json"
       }
     }
   }

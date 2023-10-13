@@ -1,21 +1,23 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserService } from './user.service';
 import * as bcryptjs from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { LoginDto } from '../../../../libs/dto/src';
-
+import { LoginDto } from '@app/common';
+import { UserRepository } from '@app/database';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly userService: UserService,
+    private readonly userRepository: UserRepository,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
 
   async login(data: LoginDto) {
-    const user = await this.userService.getUser({ email: data.email });
+    const user = await this.userRepository.findOne(
+      { email: data.email },
+      '+password',
+    );
     if (!user) {
       throw new UnauthorizedException('Credentials are not valid');
     }
@@ -35,8 +37,7 @@ export class AuthService {
   async getUserFromToken(token: string) {
     const tokenPayload = this.jwtService.verify(token);
     const { user_id: userId } = tokenPayload;
-    const user = await this.userService.getUser({ _id: userId });
-    console.log('user', user);
+    const user = await this.userRepository.findOne({ _id: userId });
     return user;
   }
 }

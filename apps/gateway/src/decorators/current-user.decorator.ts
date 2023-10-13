@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User } from '../../../../libs/database/src';
+import { User } from '@app/database';
 
 export const getCurrentUserByContext = (context: ExecutionContext): User => {
   if (context.getType() === 'http') {
@@ -7,6 +7,9 @@ export const getCurrentUserByContext = (context: ExecutionContext): User => {
   }
   if (context.getType() === 'rpc') {
     return context.switchToRpc().getData().user;
+  }
+  if (context.getType() === 'ws') {
+    return context.switchToWs().getClient().handshake?.headers?.user;
   }
 };
 

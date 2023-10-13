@@ -4,10 +4,11 @@ import { UserService } from './services';
 import { RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import {
   ChangePasswordDto,
-  IRpcRequest,
   LoginDto,
   RegisterDto,
-} from '../../../libs/dto/src';
+  RpcRequest,
+} from '@app/common';
+import { RpcException } from '@nestjs/microservices';
 
 @Controller()
 export class AuthController {
@@ -62,10 +63,10 @@ export class AuthController {
     exchange: 'exchange',
     queue: 'auth.logout',
   })
-  async validate(payload: { Authentication: string }) {
+  async validate(payload: { authentication: string }) {
     try {
       const user = await this.authService.getUserFromToken(
-        payload.Authentication,
+        payload.authentication,
       );
       return user;
     } catch (exception) {
@@ -78,7 +79,7 @@ export class AuthController {
     exchange: 'exchange',
     queue: 'auth.changePassword',
   })
-  async changePassword(payload: IRpcRequest<ChangePasswordDto>) {
+  async changePassword(payload: RpcRequest<ChangePasswordDto>) {
     try {
       const { user_id: userId, data } = payload;
       const updatedUser = await this.userService.changePassword(userId, data);

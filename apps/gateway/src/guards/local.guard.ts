@@ -1,12 +1,10 @@
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { RabbitmqService } from '../../../../libs/rabbitmq/src';
-import { Observable } from 'rxjs';
+import { RabbitmqService } from '@app/rabbitmq';
 
 @Injectable()
 export class LocalGuard implements CanActivate {
@@ -18,7 +16,7 @@ export class LocalGuard implements CanActivate {
       'exchange',
       'auth.validate',
       {
-        Authentication: authentication,
+        authentication: authentication,
       },
     );
     if (!user) {
@@ -31,14 +29,23 @@ export class LocalGuard implements CanActivate {
   private getAuthentication(context: ExecutionContext) {
     let authentication: string;
     if (context.getType() === 'rpc') {
-      authentication = context.switchToRpc().getData().Authentication;
+      authentication = context.switchToRpc().getData().authentication;
     } else if (context.getType() === 'http') {
-      authentication = context.switchToHttp().getRequest()
-        .cookies?.Authentication;
+      const request = context.switchToHttp().getRequest();
+      authentication =
+        request.cookies?.authentication ?? request.headers?.authentication;
+    } else if (context.getType() === 'ws') {
+      const client = context.switchToWs().getClient();
+      authentication = client.handshake.headers.authentication;
     }
+
+    if (authentication?.includes('Bearer')) {
+      authentication = authentication.split(' ')?.[1];
+    }
+
     if (!authentication) {
       throw new UnauthorizedException(
-        'No value was provided for Authentication',
+        'No value was provided for authentication',
       );
     }
     return authentication;
@@ -49,6 +56,9 @@ export class LocalGuard implements CanActivate {
       context.switchToRpc().getData().user = user;
     } else if (context.getType() === 'http') {
       context.switchToHttp().getRequest().user = user;
+    } else if (context.getType() === 'ws') {
+      const client = context.switchToWs().getClient();
+      client.handshake.headers.user = user;
     }
   }
 }
