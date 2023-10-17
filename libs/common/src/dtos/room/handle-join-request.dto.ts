@@ -4,7 +4,11 @@ import { JoinRequestStatus } from '../../constants';
 export class HandleJoinRequestDto {
   @IsString()
   @IsNotEmpty()
-  id: string;
+  room_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  join_request_id: string;
 
   @IsString()
   @IsNotEmpty()

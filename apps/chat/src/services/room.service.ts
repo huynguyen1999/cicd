@@ -1,12 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  CheckUserInRoomDto,
   CreateRoomDto,
   GetRoomsDto,
   HandleJoinRequestDto,
   JoinRequestStatus,
   JoinRoomDto,
+  KickUserFromRoomDto,
 } from '@app/common';
-import { Room, RoomRepository } from '@app/database';
+import { Room, RoomRepository, UserRepository } from '@app/database';
 import { Types } from 'mongoose';
 import { v4 as uuid } from 'uuid';
 
@@ -48,7 +50,6 @@ export class RoomService {
     return false;
   }
 
-  // TODO: To add another participant to the room, the owner of the room must be the one to add the participant
   async joinRoom(userId: string, data: JoinRoomDto) {
     const room = await this.roomRepository.findOne(
       { _id: data.room_id },
@@ -66,7 +67,7 @@ export class RoomService {
 
     const joinRoomRequest = {
       id: uuid(),
-      user: userId,
+      user: new Types.ObjectId(userId),
       introduction: data.introduction,
       status: JoinRequestStatus.Pending,
     };
@@ -83,11 +84,90 @@ export class RoomService {
     );
   }
 
-  async handleJoinRequest(userId: string, data: HandleJoinRequestDto) {}
+  async handleJoinRequest(userId: string, data: HandleJoinRequestDto) {
+    const room = await this.roomRepository.findOne(
+      { _id: data.room_id },
+      '+join_requests +created_by',
+    );
+    // validate data
+    if (!room) {
+      throw new BadRequestException('Room not found');
+    }
+    if (room.created_by?.toString() !== userId) {
+      throw new BadRequestException('You are not the owner of the room');
+    }
+    const joinRequestIndex = room.join_requests.findIndex(
+      (joinRequest) => joinRequest.id === data.join_request_id,
+    );
+    if (joinRequestIndex === -1) {
+      throw new BadRequestException('Join request not found');
+    }
+    if (room.join_requests[joinRequestIndex].status === data.status) {
+      throw new BadRequestException('Duplicate status');
+    }
+    //
+    room.join_requests[joinRequestIndex].status = data.status;
+    const updateData: any = {
+      join_requests: room.join_requests,
+    };
 
-  // TODO: Kick a participant from the room
+    if (data.status === JoinRequestStatus.Approved) {
+      if (
+        room.participants.find(
+          (participant) =>
+            participant.toString() ===
+            room.join_requests[joinRequestIndex].user.toString(),
+        )
+      ) {
+        throw new BadRequestException('User is already in the room');
+      }
+      updateData.participants = [
+        ...room.participants,
+        room.join_requests[joinRequestIndex].user,
+      ];
+    }
 
-  // TODO: Make another participant admin
+    const updatedRoom = await this.roomRepository.findOneAndUpdate(
+      { _id: data.room_id },
+      updateData,
+    );
+    return room.join_requests[joinRequestIndex];
+  }
 
-  // TODO: Better make room roles and permissions in the future
+  async checkUserInRoom(userId: string, data: CheckUserInRoomDto) {
+    if (Types.ObjectId.isValid(data.room_id) === false) {
+      throw new BadRequestException('Invalid room id');
+    }
+    const room = await this.roomRepository.findOne({ _id: data.room_id });
+    if (!room) {
+      throw new BadRequestException('Room not found');
+    }
+    return this.userIsAlreadyInRoom(userId, room);
+  }
+
+  async kickUserFromRoom(adminUserId: string, data: KickUserFromRoomDto) {
+    if (data.user_id === adminUserId) {
+      throw new BadRequestException('You cannot kick yourself');
+    }
+    const room = await this.roomRepository.findOne(
+      { _id: data.room_id },
+      '+join_requests +created_by',
+    );
+    if (!room) {
+      throw new BadRequestException('Room not found');
+    }
+    if (room.created_by?.toString() !== adminUserId) {
+      throw new BadRequestException('You are not the owner of the room');
+    }
+    const participants = room.participants.filter(
+      (participant) => participant.toString() !== data.user_id,
+    );
+    if (participants.length === room.participants.length) {
+      throw new BadRequestException('User not found in the room');
+    }
+    return await this.roomRepository.findOneAndUpdate(
+      { _id: data.room_id },
+      { participants },
+    );
+  }
 }

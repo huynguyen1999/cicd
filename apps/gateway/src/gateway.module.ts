@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { RabbitmqModule } from '@app/rabbitmq';
 import { AuthModule } from './modules/auth/auth.module';
 import * as modules from './modules';
+import { RedisModule } from '@app/redis';
 
 @Module({
   imports: [
@@ -14,8 +15,16 @@ import * as modules from './modules';
         SOCKET_IO_PORT: Joi.number().required(),
         MONGODB_URI: Joi.string().required(),
         RABBITMQ_URI: Joi.string().required(),
+        REDIS_URI: Joi.string().required(),
       }),
       envFilePath: './apps/gateway/.env',
+    }),
+    RedisModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        url: configService.get('REDIS_URI'),
+      }),
+      inject: [ConfigService],
     }),
     RabbitmqModule,
     AuthModule,

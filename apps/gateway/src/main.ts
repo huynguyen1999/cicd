@@ -10,7 +10,9 @@ import * as os from 'os';
 import * as nodeCluster from 'cluster';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(GatewayModule);
+  const app = await NestFactory.create<NestExpressApplication>(GatewayModule, {
+    cors: true,
+  });
   app.use(cookieParser());
   app.useBodyParser('json', { limit: '10mb' });
   app.useGlobalPipes(
@@ -23,7 +25,13 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const rmqService = app.get(RabbitmqService);
   const port = configService.get('PORT');
-  app.useWebSocketAdapter(new SocketIoAdapter(app, configService, rmqService));
+  const redisSocketIoAdapter = new SocketIoAdapter(
+    app,
+    configService,
+    rmqService,
+  );
+  await redisSocketIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisSocketIoAdapter);
   await app.listen(port, () => {
     console.log(
       `API Gateway service is running on port ${port}, in process ${process.pid}`,

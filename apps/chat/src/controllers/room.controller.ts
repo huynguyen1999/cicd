@@ -1,10 +1,12 @@
 import { RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import { Controller } from '@nestjs/common';
 import {
+  CheckUserInRoomDto,
   CreateRoomDto,
   GetRoomsDto,
   HandleJoinRequestDto,
   JoinRoomDto,
+  KickUserFromRoomDto,
   RpcRequest,
 } from '@app/common';
 import { RoomService } from '../services';
@@ -68,6 +70,38 @@ export class RoomController {
       const { user_id, data } = payload;
       const rooms = await this.roomService.handleJoinRequest(user_id, data);
       return rooms;
+    } catch (exception) {
+      console.error('exception: ', exception);
+      return exception;
+    }
+  }
+
+  @RabbitRPC({
+    routingKey: 'room.checkUserInRoom',
+    exchange: 'exchange',
+    queue: 'room.checkUserInRoom',
+  })
+  async checkUserInRoom(payload: RpcRequest<CheckUserInRoomDto>) {
+    try {
+      const { user_id, data } = payload;
+      const result = await this.roomService.checkUserInRoom(user_id, data);
+      return result;
+    } catch (exception) {
+      console.error('exception: ', exception);
+      return false;
+    }
+  }
+
+  @RabbitRPC({
+    routingKey: 'room.kickUser',
+    exchange: 'exchange',
+    queue: 'room.kickUser',
+  })
+  async kickUserFromRoom(payload: RpcRequest<KickUserFromRoomDto>) {
+    try {
+      const { user_id, data } = payload;
+      const result = await this.roomService.kickUserFromRoom(user_id, data);
+      return result;
     } catch (exception) {
       return exception;
     }

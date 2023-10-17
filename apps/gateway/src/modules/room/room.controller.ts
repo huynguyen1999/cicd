@@ -4,11 +4,22 @@ import { LocalGuard } from '../../guards';
 import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import { Response } from 'express';
-import { CreateRoomDto, HandleJoinRequestDto, JoinRoomDto } from '@app/common';
+import {
+  CreateRoomDto,
+  HandleJoinRequestDto,
+  JoinRoomDto,
+  KickUserFromRoomDto,
+} from '@app/common';
+import { ChatGateway } from '../chat/chat.gateway';
+import { RedisService } from '@app/redis';
 
 @Controller('room')
 export class RoomController {
-  constructor(private readonly rabbitmqService: RabbitmqService) {}
+  constructor(
+    private readonly rabbitmqService: RabbitmqService,
+    private readonly redisService: RedisService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   @UseGuards(LocalGuard)
   @Post()
@@ -25,7 +36,6 @@ export class RoomController {
         data,
       },
     );
-    console.log(result);
     return res.status(200).send(result);
   }
 
@@ -76,6 +86,34 @@ export class RoomController {
         data: body,
       },
     );
+    return res.status(200).send(result);
+  }
+
+  @UseGuards(LocalGuard)
+  @Post('kick-user')
+  async kickUserFromRoom(
+    @CurrentUser() user: User,
+    @Body() body: KickUserFromRoomDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.rabbitmqService.requestFromRPC(
+      'exchange',
+      'room.kickUser',
+      {
+        user_id: user._id,
+        data: body,
+      },
+    );
+    const userSocketId = await this.redisService.getHash(
+      body.room_id,
+      body.user_id,
+    );
+    
+    this.chatGateway.adapter.emit('leaveRoom', {
+      user_id: body.user_id,
+      socket_id: userSocketId,
+      room_id: body.room_id,
+    });
     return res.status(200).send(result);
   }
 }
