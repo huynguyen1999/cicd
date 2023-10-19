@@ -5,6 +5,7 @@ import {
   CreateRoomDto,
   GetRoomsDto,
   HandleJoinRequestDto,
+  InviteUserToRoomDto,
   JoinRoomDto,
   KickUserFromRoomDto,
   RpcRequest,
@@ -26,7 +27,10 @@ export class RoomController {
       const newRoom = await this.roomService.createRoom(data, user_id);
       return newRoom;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -41,7 +45,10 @@ export class RoomController {
       const rooms = await this.roomService.getRooms(user_id, data);
       return rooms;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -56,7 +63,10 @@ export class RoomController {
       const rooms = await this.roomService.joinRoom(user_id, data);
       return rooms;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -68,11 +78,17 @@ export class RoomController {
   async handleJoinRequest(payload: RpcRequest<HandleJoinRequestDto>) {
     try {
       const { user_id, data } = payload;
-      const rooms = await this.roomService.handleJoinRequest(user_id, data);
-      return rooms;
+      const { request, joined_user } = await this.roomService.handleJoinRequest(
+        user_id,
+        data,
+      );
+      return { request, joined_user };
     } catch (exception) {
       console.error('exception: ', exception);
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -103,7 +119,28 @@ export class RoomController {
       const result = await this.roomService.kickUserFromRoom(user_id, data);
       return result;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
+    }
+  }
+
+  @RabbitRPC({
+    routingKey: 'room.inviteUser',
+    exchange: 'exchange',
+    queue: 'room.inviteUser',
+  })
+  async inviteUserToRoom(payload: RpcRequest<InviteUserToRoomDto>) {
+    try {
+      const { user_id, data } = payload;
+      const result = await this.roomService.inviteUserToRoom(user_id, data);
+      return result;
+    } catch (exception) {
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 }

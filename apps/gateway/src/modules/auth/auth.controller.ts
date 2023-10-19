@@ -19,17 +19,20 @@ import {
   RegisterDto,
   AUTH_COOKIE_NAME,
 } from '@app/common';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly rabbitmqService: RabbitmqService) {}
+  constructor(
+    private readonly rabbitmqService: RabbitmqService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   @Post('register')
   async register(@Body() body: RegisterDto, @Res() res: Response) {
     const result = await this.rabbitmqService.requestFromRPC(
-      'exchange',
-      'auth.register',
       body,
+      'auth.register',
     );
     return res.status(200).send(result);
   }
@@ -37,9 +40,8 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: LoginDto, @Res() res: Response) {
     const result: any = await this.rabbitmqService.requestFromRPC(
-      'exchange',
-      'auth.login',
       body,
+      'auth.login',
     );
     const { token, maxAge, httpOnly } = result;
     res.cookie(AUTH_COOKIE_NAME, token, { httpOnly, maxAge });
@@ -49,13 +51,14 @@ export class AuthController {
 
   @UseGuards(LocalGuard)
   @Post('logout')
-  async logout(@Res() res: Response) {
+  async logout(@CurrentUser() user: User, @Res() res: Response) {
     const result: any = await this.rabbitmqService.requestFromRPC(
-      'exchange',
+      { user_id: user._id },
       'auth.logout',
     );
     const { token, maxAge, httpOnly } = result;
     res.cookie(AUTH_COOKIE_NAME, token, { httpOnly, maxAge });
+    this.chatGateway.adapter.emit('logout', { user_id: user._id });
     return res.send(result);
   }
 
@@ -73,9 +76,8 @@ export class AuthController {
     @Res() res: Response,
   ) {
     const result: any = await this.rabbitmqService.requestFromRPC(
-      'exchange',
-      'auth.changePassword',
       { user_id: user._id, data: body },
+      'auth.changePassword',
     );
     return res.send(result);
   }

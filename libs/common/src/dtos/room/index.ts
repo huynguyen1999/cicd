@@ -4,3 +4,4 @@ export * from './get-rooms.dto';
 export * from './handle-join-request.dto';
 export * from './check-user-in-room.dto';
 export * from './kick-user-from-room.dto';
+export * from './invite-user-to-room.dto';

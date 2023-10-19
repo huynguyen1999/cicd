@@ -13,11 +13,10 @@ export class LocalGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const authentication = this.getAuthentication(context);
     const user = await this.rabbitmqService.requestFromRPC(
-      'exchange',
-      'auth.validate',
       {
         authentication: authentication,
       },
+      'auth.validate',
     );
     if (!user) {
       throw new UnauthorizedException('Credentials are not valid.');

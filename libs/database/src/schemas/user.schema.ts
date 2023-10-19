@@ -19,10 +19,11 @@ export class User extends AbstractDocument {
     type: String,
     default: UserStatus.Offline,
     enum: Object.values(UserStatus),
+    index: true,
   })
   status?: UserStatus;
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date, default: Date.now, index: true })
   last_seen?: Date;
 
   @Prop({ type: String })
@@ -31,12 +32,14 @@ export class User extends AbstractDocument {
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: [],
+    index: true,
   })
   friends_list?: string[];
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: [],
+    index: true,
     select: false,
   })
   blocked_users?: string[];
@@ -72,7 +75,7 @@ export class User extends AbstractDocument {
   @Prop({ type: [String], default: [], select: false })
   old_passwords?: string[];
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date, default: Date.now, index: true })
   created_at?: Date;
 
   @Prop({
@@ -80,9 +83,11 @@ export class User extends AbstractDocument {
     ref: 'User',
     select: false,
     default: null,
+    index: true,
   })
   created_by?: User;
 }
 
 export type UserDocument = HydratedDocument<User>;
 export const UserSchema = SchemaFactory.createForClass(User);
+UserSchema.plugin(require('mongoose-paginate-v2'));

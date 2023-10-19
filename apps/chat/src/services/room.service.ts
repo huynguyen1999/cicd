@@ -4,17 +4,21 @@ import {
   CreateRoomDto,
   GetRoomsDto,
   HandleJoinRequestDto,
+  InviteUserToRoomDto,
   JoinRequestStatus,
   JoinRoomDto,
   KickUserFromRoomDto,
 } from '@app/common';
-import { Room, RoomRepository, UserRepository } from '@app/database';
+import { Room, RoomRepository, User, UserRepository } from '@app/database';
 import { Types } from 'mongoose';
 import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class RoomService {
-  constructor(private readonly roomRepository: RoomRepository) {}
+  constructor(
+    private readonly roomRepository: RoomRepository,
+    private readonly userRepository: UserRepository,
+  ) {}
   async createRoom(data: CreateRoomDto, userId: string) {
     const userObjectId = new Types.ObjectId(userId);
     return await this.roomRepository.create({
@@ -110,7 +114,7 @@ export class RoomService {
     const updateData: any = {
       join_requests: room.join_requests,
     };
-
+    let joinedUser: User;
     if (data.status === JoinRequestStatus.Approved) {
       if (
         room.participants.find(
@@ -125,13 +129,19 @@ export class RoomService {
         ...room.participants,
         room.join_requests[joinRequestIndex].user,
       ];
+      joinedUser = await this.userRepository.findOne({
+        _id: room.join_requests[joinRequestIndex].user,
+      });
     }
 
     const updatedRoom = await this.roomRepository.findOneAndUpdate(
       { _id: data.room_id },
       updateData,
     );
-    return room.join_requests[joinRequestIndex];
+    return {
+      request: room.join_requests[joinRequestIndex],
+      joined_user: joinedUser,
+    };
   }
 
   async checkUserInRoom(userId: string, data: CheckUserInRoomDto) {
@@ -149,12 +159,18 @@ export class RoomService {
     if (data.user_id === adminUserId) {
       throw new BadRequestException('You cannot kick yourself');
     }
-    const room = await this.roomRepository.findOne(
-      { _id: data.room_id },
-      '+join_requests +created_by',
-    );
+    const [userToBeKicked, room] = await Promise.all([
+      this.userRepository.findOne({ _id: data.user_id }),
+      this.roomRepository.findOne(
+        { _id: data.room_id },
+        '+join_requests +created_by',
+      ),
+    ]);
     if (!room) {
       throw new BadRequestException('Room not found');
+    }
+    if (!userToBeKicked) {
+      throw new BadRequestException('User not found');
     }
     if (room.created_by?.toString() !== adminUserId) {
       throw new BadRequestException('You are not the owner of the room');
@@ -165,9 +181,51 @@ export class RoomService {
     if (participants.length === room.participants.length) {
       throw new BadRequestException('User not found in the room');
     }
-    return await this.roomRepository.findOneAndUpdate(
+    await this.roomRepository.findOneAndUpdate(
       { _id: data.room_id },
       { participants },
+    );
+    return { user: userToBeKicked };
+  }
+
+  async inviteUserToRoom(userId: string, data: InviteUserToRoomDto) {
+    const [room, user] = await Promise.all([
+      this.roomRepository.findOne(
+        { room_id: data.room_id },
+        '+join_requests +participants',
+      ),
+      this.userRepository.findOne({ _id: data.user_id }),
+    ]);
+    if (!room) {
+      throw new BadRequestException('Room not found');
+    }
+    if (!user) {
+      throw new BadRequestException('The user you want to invite is not found');
+    }
+    if (this.userIsAlreadyInRoom(data.user_id, room)) {
+      throw new BadRequestException(
+        'The user you want to invite is already in the room',
+      );
+    }
+    if (this.userHasAlreadyRequestedToJoin(data.user_id, room)) {
+      throw new BadRequestException('User has already requested to join');
+    }
+
+    const joinRoomRequest = {
+      id: uuid(),
+      user: new Types.ObjectId(data.user_id),
+      status: JoinRequestStatus.Pending,
+    };
+
+    return await this.roomRepository.findOneAndUpdate(
+      {
+        _id: data.room_id,
+      },
+      {
+        $push: {
+          join_requests: joinRoomRequest,
+        },
+      },
     );
   }
 }

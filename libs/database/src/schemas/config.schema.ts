@@ -8,3 +8,4 @@ export class Config extends AbstractDocument {}
 
 export type ConfigDocument = HydratedDocument<Config>;
 export const ConfigSchema = SchemaFactory.createForClass(Config);
+ConfigSchema.plugin(require('mongoose-paginate-v2'));

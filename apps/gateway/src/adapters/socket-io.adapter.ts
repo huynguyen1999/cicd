@@ -32,18 +32,17 @@ export class SocketIoAdapter extends IoAdapter {
       if (!req.headers.authentication) {
         return allowFunction(`Unauthorized`, false);
       }
-
       const authentication = req.headers.authentication.split(' ')[1];
       const user = await this.rmqService.requestFromRPC(
-        'exchange',
-        'auth.validate',
         {
           authentication,
         },
+        'auth.validate',
       );
       if (!user._id) {
         return allowFunction(`Credentials are invalid`, false);
       }
+      req.headers.user = user;
       return allowFunction(null, true);
     };
     const server = super.createIOServer(port, options);

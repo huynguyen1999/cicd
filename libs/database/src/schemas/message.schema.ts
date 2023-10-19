@@ -4,7 +4,7 @@ import mongoose, { HydratedDocument } from 'mongoose';
 import { ReactionType } from '@app/common';
 
 @Schema()
-export class MessageReadReceipt extends AbstractDocument {
+export class MessageSeenReceipt {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }) // User who has seen the message
   user: mongoose.Types.ObjectId;
 
@@ -13,7 +13,7 @@ export class MessageReadReceipt extends AbstractDocument {
 }
 
 @Schema()
-export class MessageReactReceipt extends AbstractDocument {
+export class MessageReactReceipt {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }) // User who has seen the message
   user: mongoose.Types.ObjectId;
 
@@ -23,6 +23,9 @@ export class MessageReactReceipt extends AbstractDocument {
   @Prop({ type: Date, required: true })
   react_at: Date;
 }
+
+@Schema()
+export class MessageMetadata {}
 
 @Schema({ versionKey: false })
 export class Message extends AbstractDocument {
@@ -35,18 +38,29 @@ export class Message extends AbstractDocument {
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    index: true,
   })
-  sender: mongoose.Types.ObjectId; // User who sent the message
+  sender?: mongoose.Types.ObjectId; // User who sent the message
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true }) // Reference to the room being invited to
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Room',
+    required: true,
+    index: true,
+  }) // Reference to the room being invited to
   room: mongoose.Types.ObjectId;
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.Mixed }],
     default: [],
   })
-  seen_by?: MessageReadReceipt[]; // List of users who has seen the message
+  seen_by?: MessageSeenReceipt[]; // List of users who has seen the message
+
+  @Prop({
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  })
+  metadata?: MessageMetadata;
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.Mixed }],
@@ -54,9 +68,10 @@ export class Message extends AbstractDocument {
   })
   react_by?: MessageReactReceipt[];
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date, default: Date.now, index: true })
   created_at?: Date;
 }
 
 export type MessageDocument = HydratedDocument<Message>;
 export const MessageSchema = SchemaFactory.createForClass(Message);
+MessageSchema.plugin(require('mongoose-paginate-v2'));

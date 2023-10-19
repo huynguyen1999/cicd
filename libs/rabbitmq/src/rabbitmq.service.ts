@@ -6,14 +6,14 @@ import { RPC_TIMEOUT } from './rabbitmq.constant';
 export class RabbitmqService {
   constructor(private readonly amqpConnection: AmqpConnection) {}
 
-  publishMessage(exchange: string, routingKey: string, data: any) {
+  publishMessage(data: any, routingKey: string, exchange = 'exchange') {
     this.amqpConnection.publish(exchange, routingKey, data);
   }
 
   async requestFromRPC(
-    exchange: string,
+    data: any,
     routingKey: string,
-    data: any = {},
+    exchange = 'exchange',
   ): Promise<any> {
     const response = await this.amqpConnection.request({
       exchange,

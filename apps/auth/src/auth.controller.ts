@@ -27,7 +27,10 @@ export class AuthController {
       const user = await this.userService.createUser(payload);
       return user;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -41,7 +44,10 @@ export class AuthController {
       const { token, maxAge } = await this.authService.login(payload);
       return { token, maxAge, httpOnly: true };
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -54,7 +60,10 @@ export class AuthController {
     try {
       return { success: true, token: '', httpOnly: true, maxAge: 0 };
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -70,7 +79,10 @@ export class AuthController {
       );
       return user;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 
@@ -85,7 +97,10 @@ export class AuthController {
       const updatedUser = await this.userService.changePassword(userId, data);
       return updatedUser;
     } catch (exception) {
-      return exception;
+      return {
+        success: false,
+        exception,
+      };
     }
   }
 }

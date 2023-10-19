@@ -81,6 +81,24 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return this.model.find(filterQuery, projection, { ...options, lean: true });
   }
 
+  async updateMany(
+    filterQuery: FilterQuery<TDocument>,
+    update: UpdateQuery<TDocument>,
+  ): Promise<any> {
+    return this.model.updateMany(filterQuery, update);
+  }
+
+  async paginate(
+    filterQuery: FilterQuery<TDocument>,
+    options?: QueryOptions<TDocument>,
+  ) {
+    // @ts-ignore
+    return await this.model.paginate(filterQuery, {
+      ...options,
+      lean: true,
+    });
+  }
+
   async startTransaction() {
     const session = await this.connection.startSession();
     session.startTransaction();

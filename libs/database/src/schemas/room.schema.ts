@@ -37,6 +37,7 @@ export class Room extends AbstractDocument {
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: [],
+    index: true,
   })
   participants: Types.ObjectId[]; // List of users who are part of the room
 
@@ -44,10 +45,11 @@ export class Room extends AbstractDocument {
     type: [{ type: mongoose.Schema.Types.Mixed }],
     default: [],
     select: false,
+    index: true,
   })
   join_requests?: JoinRequest[];
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date, default: Date.now, index: true })
   created_at?: Date;
 
   @Prop({
@@ -55,9 +57,11 @@ export class Room extends AbstractDocument {
     ref: 'User',
     select: false,
     default: null,
+    index: true,
   })
   created_by: Types.ObjectId; // User who created the room
 }
 
 export type RoomDocument = HydratedDocument<Room>;
 export const RoomSchema = SchemaFactory.createForClass(Room);
+RoomSchema.plugin(require('mongoose-paginate-v2'));

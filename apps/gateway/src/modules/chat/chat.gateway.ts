@@ -10,12 +10,18 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { LocalGuard, RoomGuard } from '../../guards';
+import { LocalGuard, RoomGuard, WsThrottlerGuard } from '../../guards';
 import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import { RedisService } from '@app/redis';
 import { Adapter } from 'socket.io-adapter';
-import { USER_JOINED_ROOMS } from '@app/common';
+import {
+  ConnectRoomDto,
+  MessagingDto,
+  USER_CONNECTED_ROOMS,
+  USER_CONNECTED_SOCKETS,
+} from '@app/common';
+import { RabbitmqService } from '@app/rabbitmq';
 
 @WebSocketGateway()
 export class ChatGateway
@@ -24,86 +30,152 @@ export class ChatGateway
   @WebSocketServer()
   public server: Server;
   public adapter: Adapter;
-  constructor(private readonly redisService: RedisService) {}
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly rabbitmqService: RabbitmqService,
+  ) {}
 
-  afterInit() {
+  async afterInit() {
     this.adapter = this.server.of('/').adapter;
     this.adapter.on(
-      'joinRoom',
+      'connectRoom',
       (data: { user_id: string; socket_id: string; room_id: string }) =>
-        this.handleJoinRoomEvent(data),
+        this.handleConnectRoomEvent(data),
     );
     this.adapter.on(
       'leaveRoom',
       (data: { user_id: string; socket_id: string; room_id: string }) =>
         this.handleLeaveRoomEvent(data),
     );
+    this.adapter.on('logout', (data: { user_id: string }) =>
+      this.handleLogoutEvent(data),
+    );
+    await this.redisService.deleteMultipleKeys(`${USER_CONNECTED_ROOMS('')}*`);
+    await this.redisService.deleteMultipleKeys(
+      `${USER_CONNECTED_SOCKETS('')}*`,
+    );
   }
 
-  async handleJoinRoomEvent(data: {
+  async handleConnectRoomEvent(data: {
     user_id: string;
     socket_id: string;
     room_id: string;
   }) {
-    console.log(
-      `User ${data.user_id} with socket id=${data.socket_id} joined room ${data.room_id}`,
-    );
     await this.redisService.setHash(
-      USER_JOINED_ROOMS(data.user_id),
+      USER_CONNECTED_ROOMS(data.user_id),
       data.socket_id,
       data.room_id,
     );
   }
-  async handleLeaveRoomEvent(data: {
-    user_id: string;
-    socket_id: string;
-    room_id: string;
-  }) {
-    console.log(
-      `User ${data.user_id} with socket id=${data.socket_id} left room ${data.room_id}`,
+  async handleLeaveRoomEvent(data: { user_id: string; room_id: string }) {
+    // disconnect the user from the room
+    const userConnectedRooms = await this.redisService.getHashAll(
+      USER_CONNECTED_ROOMS(data.user_id),
     );
-    this.server.of('/').sockets.get(data.socket_id).leave(data.room_id);
+    const socketIds = [];
+    for (const [socketId, roomId] of Object.entries(userConnectedRooms)) {
+      if (roomId === data.room_id) {
+        this.server.sockets.sockets.get(socketId).leave(data.room_id);
+        socketIds.push(socketId);
+      }
+    }
     await this.redisService.deleteHash(
-      USER_JOINED_ROOMS(data.user_id),
-      data.socket_id,
+      USER_CONNECTED_ROOMS(data.user_id),
+      socketIds,
     );
   }
 
-  handleConnection(client: Socket, args: any) {}
+  async handleLogoutEvent(data: { user_id: string }) {
+    this.redisService.deleteKey(USER_CONNECTED_SOCKETS(data.user_id));
+    this.redisService.deleteKey(USER_CONNECTED_ROOMS(data.user_id));
+  }
 
-  handleDisconnect(client: Socket) {
+  async handleConnection(client: Socket, args: any) {
     const user: any = client.handshake.headers.user;
     if (!user) return;
-    this.redisService.deleteKey(USER_JOINED_ROOMS(user._id));
+    await this.redisService.setHash(
+      USER_CONNECTED_SOCKETS(user._id),
+      client.id,
+      Date.now().toString(),
+    );
   }
 
-  @UseGuards(LocalGuard, RoomGuard)
+  async handleDisconnect(client: Socket) {
+    const user: any = client.handshake.headers.user;
+    if (!user) return;
+    await this.redisService.deleteHash(
+      USER_CONNECTED_ROOMS(user._id),
+      client.id,
+    );
+    await this.redisService.deleteHash(
+      USER_CONNECTED_SOCKETS(user._id),
+      client.id,
+    );
+  }
+
+  @UseGuards(LocalGuard, RoomGuard, WsThrottlerGuard)
   @SubscribeMessage('message')
-  onNewMessage(
+  async onNewMessage(
     @CurrentUser() user: User,
-    @MessageBody() body: { message: string; room_id: string },
+    @MessageBody() body: MessagingDto,
     @ConnectedSocket() client: Socket,
   ) {
-    this.server.to(body.room_id).emit('message', {
-      msg: body.message,
+    const newMessage = await this.rabbitmqService.requestFromRPC(
+      { user_id: user._id, data: body },
+      'chat.messaging',
+    );
+    this.server.to(body.room_id).emit('roomMessages', {
+      messages: [newMessage],
     });
   }
 
   @UseGuards(LocalGuard, RoomGuard)
-  @SubscribeMessage('joinRoom')
+  @SubscribeMessage('seenMessages')
+  async onSeenMessages(
+    @CurrentUser() user: User,
+    @MessageBody() body: { message_ids: string[]; room_id: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const seenMessages = await this.rabbitmqService.requestFromRPC(
+      { user_id: user._id, data: body },
+      'chat.seenMessages',
+    );
+    this.server
+      .to(body.room_id)
+      .emit('roomMessages', { messages: seenMessages });
+  }
+
+  @UseGuards(LocalGuard, RoomGuard)
+  @SubscribeMessage('connectRoom')
   async onJoinRoom(
     @CurrentUser() user: User,
-    @MessageBody() body: { room_id: string },
+    @MessageBody() body: ConnectRoomDto,
     @ConnectedSocket() client: Socket,
   ) {
     client.join(body.room_id);
-    this.adapter.emit('joinRoom', {
-      user_id: user._id.toString(),
+    this.adapter.emit('connectRoom', {
+      user_id: user._id,
       socket_id: client.id,
       room_id: body.room_id,
     });
-    this.server.to(body.room_id).emit('message', {
-      msg: `User ${user.email} has joined the room`,
-    });
+
+    const latestMessages = await this.rabbitmqService.requestFromRPC(
+      {
+        user_id: user._id,
+        data: { room_id: body.room_id, limit: 10, skip: 0 },
+      },
+      'chat.getMessages',
+    );
+    client.emit('roomMessages', { messages: latestMessages });
+  }
+
+  @UseGuards(LocalGuard, RoomGuard)
+  @SubscribeMessage('typingMessage')
+  async onTypingMessage(
+    @CurrentUser() user: User,
+    @MessageBody() body: ConnectRoomDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    client.to(body.room_id).emit('roomTypingMessage', { user });
   }
 }
