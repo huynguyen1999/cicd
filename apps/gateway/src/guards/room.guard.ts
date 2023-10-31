@@ -9,7 +9,7 @@ import { User } from '@app/database';
 
 @Injectable()
 export class RoomGuard implements CanActivate {
-  constructor(private readonly rabbitmqService: RabbitmqService) {}
+  constructor(private readonly rmqService: RabbitmqService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const { user, roomId } = this.getUserAndRoomId(context);
@@ -19,7 +19,7 @@ export class RoomGuard implements CanActivate {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data: { room_id: roomId },
         user: user,

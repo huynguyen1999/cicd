@@ -19,7 +19,7 @@ async function bootstrap() {
   await app.listen(port, () => {
     let runtime = process.versions.bun ? 'bun' : 'node';
     console.log(
-      `Chat service is running on port ${port} in ${runtime} runtime`,
+      `Message service is running on port ${port} in ${runtime} runtime`,
     );
   });
 }

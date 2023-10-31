@@ -25,13 +25,13 @@ import { SessionGuard } from '../../guards';
 @Controller('auth')
 export class AuthController {
   constructor(
-    private readonly rabbitmqService: RabbitmqService,
+    private readonly rmqService: RabbitmqService,
     private readonly chatGateway: ChatGateway,
   ) {}
 
   @Post('register')
   async register(@Body() body: RegisterDto, @Res() res: Response) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body },
       'auth.register',
     );
@@ -44,7 +44,7 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const result: any = await this.rabbitmqService.request(
+    const result: any = await this.rmqService.request(
       {
         data: {
           ...body,
@@ -73,7 +73,7 @@ export class AuthController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const result: any = await this.rabbitmqService.request(
+    const result: any = await this.rmqService.request(
       { data: { session_id: req.cookies.session }, user },
       'auth.logout',
     );
@@ -85,7 +85,7 @@ export class AuthController {
   @UseGuards(SessionGuard)
   @Get('profile')
   async getProfile(@CurrentUser() user: User, @Res() res: Response) {
-    const profile: any = await this.rabbitmqService.request(
+    const profile: any = await this.rmqService.request(
       { user },
       'user.getProfile',
     );
@@ -99,7 +99,7 @@ export class AuthController {
     @CurrentUser() user: User,
     @Res() res: Response,
   ) {
-    const result: any = await this.rabbitmqService.request(
+    const result: any = await this.rmqService.request(
       { data: body, user },
       'auth.changePassword',
     );

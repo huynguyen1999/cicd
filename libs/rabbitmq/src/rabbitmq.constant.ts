@@ -1,1 +1,1 @@
-export const RPC_TIMEOUT = 5000;
+export const RPC_TIMEOUT_MS = 10000;

@@ -1,6 +1,6 @@
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { RPC_TIMEOUT } from './rabbitmq.constant';
+import { RPC_TIMEOUT_MS } from './rabbitmq.constant';
 import * as FileSystem from 'fs';
 import { join } from 'path';
 import { ConfigService } from '@nestjs/config';
@@ -38,6 +38,7 @@ export class RabbitmqService implements OnModuleInit {
   async request(
     data: any,
     routingKey: string,
+    timeout = RPC_TIMEOUT_MS,
     exchange = 'exchange',
   ): Promise<any> {
     data.service = this.configService.get('SERVICE_NAME');
@@ -50,7 +51,7 @@ export class RabbitmqService implements OnModuleInit {
         ...data,
         signature,
       },
-      timeout: RPC_TIMEOUT,
+      timeout,
     });
 
     return response;

@@ -15,3 +15,4 @@ export * from './chat';
 export * from './room';
 export * from './sessions';
 export * from './user';
+export * from './message';

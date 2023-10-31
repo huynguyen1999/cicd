@@ -24,7 +24,7 @@ export class LoggingInterceptor<T> implements NestInterceptor<T, Response<T>> {
       logMessage += ` - HTTP Method: ${request.method} - Path: ${
         request.url
       } - Body: ${JSON.stringify(request.body)} - Params: ${JSON.stringify(
-        request.params,
+        request.query,
       )}`;
     } else if (type === 'ws') {
       const client = context.switchToWs().getClient();

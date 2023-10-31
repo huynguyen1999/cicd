@@ -17,7 +17,7 @@ import { User } from '@app/database';
 export class SessionGuard implements CanActivate {
   constructor(
     private readonly redisService: RedisService,
-    private readonly rabbitmqService: RabbitmqService,
+    private readonly rmqService: RabbitmqService,
   ) {}
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const sessionId = this.getSessionId(context);
@@ -28,7 +28,7 @@ export class SessionGuard implements CanActivate {
     let user: User = await this.redisService.get(USER_DATA(userId));
     // having session but user not found in redis
     if (!user) {
-      const validateResult = await this.rabbitmqService.request(
+      const validateResult = await this.rmqService.request(
         {
           data: { session_id: sessionId, user_id: userId },
         },

@@ -17,7 +17,7 @@ import { ChatGateway } from '../chat/chat.gateway';
 @Controller('room')
 export class RoomController {
   constructor(
-    private readonly rabbitmqService: RabbitmqService,
+    private readonly rmqService: RabbitmqService,
     private readonly chatGateway: ChatGateway,
   ) {}
 
@@ -27,7 +27,7 @@ export class RoomController {
     @Body() data: CreateRoomDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data,
         user,
@@ -39,7 +39,7 @@ export class RoomController {
 
   @Get()
   async getRooms(@CurrentUser() user: User, @Res() res: Response) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { user },
       'room.getRooms',
     );
@@ -53,7 +53,7 @@ export class RoomController {
     @Body() body: JoinRoomDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data: body,
         user,
@@ -69,7 +69,7 @@ export class RoomController {
     @Body() body: HandleJoinRequestDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data: body,
         user,
@@ -77,7 +77,7 @@ export class RoomController {
       'room.handleJoinRequest',
     );
     if (result.data.joined_user) {
-      const message = await this.rabbitmqService.request(
+      const message = await this.rmqService.request(
         {
           room_id: body.room_id,
           message: `${result.joined_user.email} has joined the room`,
@@ -97,7 +97,7 @@ export class RoomController {
     @Body() body: KickUserFromRoomDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data: body,
         user,
@@ -109,7 +109,7 @@ export class RoomController {
         user_id: result.user._id,
         room_id: body.room_id,
       });
-      const message = await this.rabbitmqService.request(
+      const message = await this.rmqService.request(
         {
           room_id: body.room_id,
           message: `${result.user.email} has been kicked`,
@@ -130,7 +130,7 @@ export class RoomController {
     @Body() body: InviteUserToRoomDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data: body,
         user,

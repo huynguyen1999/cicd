@@ -44,7 +44,7 @@ export class ChatGateway
   public adapter: Adapter;
   constructor(
     private readonly redisService: RedisService,
-    private readonly rabbitmqService: RabbitmqService,
+    private readonly rmqService: RabbitmqService,
   ) {}
 
   async afterInit() {
@@ -109,7 +109,7 @@ export class ChatGateway
       client.id,
       Date.now().toString(),
     );
-    this.rabbitmqService.request(
+    this.rmqService.request(
       { data: { status: UserStatus.Online }, user },
       'user.updateUserStatus',
     );
@@ -120,7 +120,7 @@ export class ChatGateway
     if (!user) return;
     this.redisService.deleteHash(USER_CONNECTED_ROOMS(user._id), client.id);
     this.redisService.deleteHash(USER_CONNECTED_SOCKETS(user._id), client.id);
-    this.rabbitmqService.request(
+    this.rmqService.request(
       { data: { status: UserStatus.Offline }, user },
       'user.updateUserStatus',
     );
@@ -138,7 +138,7 @@ export class ChatGateway
       socket_id: client.id,
       room_id: body.room_id,
     });
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       {
         data: { room_id: body.room_id, limit: 10, skip: 0 },
         user,
@@ -164,7 +164,7 @@ export class ChatGateway
     @MessageBody() body: MessagingDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'chat.message',
     );
@@ -180,7 +180,7 @@ export class ChatGateway
     @MessageBody() body: SeenMessagesDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'chat.seenMessages',
     );
@@ -196,7 +196,7 @@ export class ChatGateway
     @MessageBody() body: ReactMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'chat.reactMessage',
     );
@@ -212,7 +212,7 @@ export class ChatGateway
     @MessageBody() body: EditMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'chat.editMessage',
     );
@@ -228,7 +228,7 @@ export class ChatGateway
     @MessageBody() body: DeleteMessagesDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'chat.deleteMessages',
     );
@@ -265,7 +265,7 @@ export class ChatGateway
     @MessageBody() body: GetUsersStatusDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: { user_ids: body.user_ids }, user },
       'user.getUsersStatus',
     );

@@ -24,7 +24,7 @@ import {
 @UseGuards(SessionGuard)
 @Controller('session')
 export class SessionController {
-  constructor(private readonly rabbitmqService: RabbitmqService) {}
+  constructor(private readonly rmqService: RabbitmqService) {}
 
   @Get('list')
   async getSessions(
@@ -32,7 +32,7 @@ export class SessionController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const sessions = await this.rabbitmqService.request(
+    const sessions = await this.rmqService.request(
       { data: {}, user },
       'session.getSessions',
     );
@@ -45,7 +45,7 @@ export class SessionController {
     @Body() body: RevokeSessionDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'session.revokeSession',
     );
@@ -58,7 +58,7 @@ export class SessionController {
     @Body() body: RevokeSessionsDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'session.revokeSessions',
     );
@@ -71,7 +71,7 @@ export class SessionController {
     @Body() body: RefreshSessionDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'session.refreshSession',
     );
@@ -91,7 +91,7 @@ export class SessionController {
     @Body() body: UpdateRefreshTokenDto,
     @Res() res: Response,
   ) {
-    const result = await this.rabbitmqService.request(
+    const result = await this.rmqService.request(
       { data: body, user },
       'session.revokeSession',
     );
