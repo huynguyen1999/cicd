@@ -1,6 +1,7 @@
 import { IsArray, IsNotEmpty, IsString } from 'class-validator';
+import { RpcRequest } from '..';
 
-export class SeenMessagesDto {
+export class SeenMessagesDto  {
   @IsArray()
   @IsString({ each: true })
   @IsNotEmpty({ each: true })

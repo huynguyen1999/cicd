@@ -1,16 +1,19 @@
-import { INestApplicationContext } from '@nestjs/common';
+import { INestApplicationContext, UnauthorizedException } from '@nestjs/common';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { ServerOptions } from 'socket.io';
 import { ConfigService } from '@nestjs/config';
 import { RabbitmqService } from '@app/rabbitmq';
+import { RedisService } from '@app/redis';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
+import { USER_DATA, USER_SESSIONS } from '@app/common';
 
 export class SocketIoAdapter extends IoAdapter {
   constructor(
     private app: INestApplicationContext,
     private configService: ConfigService,
     private rmqService: RabbitmqService,
+    private redisService: RedisService,
   ) {
     super(app);
   }
@@ -29,18 +32,26 @@ export class SocketIoAdapter extends IoAdapter {
   createIOServer(port: number, options?: ServerOptions) {
     port = this.configService.get<number>('SOCKET_IO_PORT');
     options.allowRequest = async (req: any, allowFunction: Function) => {
-      if (!req.headers.authentication) {
+      if (!req.headers.session) {
         return allowFunction(`Unauthorized`, false);
       }
-      const authentication = req.headers.authentication.split(' ')[1];
-      const user = await this.rmqService.requestFromRPC(
-        {
-          authentication,
-        },
-        'auth.validate',
-      );
-      if (!user._id) {
+      const sessionId = req.headers.session;
+      const userId = await this.redisService.get(USER_SESSIONS(sessionId));
+      if (!userId) {
         return allowFunction(`Credentials are invalid`, false);
+      }
+      let user = await this.redisService.get(USER_DATA(userId));
+      if (!user) {
+        const validateResult = await this.rmqService.request(
+          {
+            data: { session_id: sessionId, user_id: userId },
+          },
+          'auth.validate',
+        );
+        if (!validateResult.success) {
+          return allowFunction(`Credentials are invalid`, false);
+        }
+        user = validateResult.data;
       }
       req.headers.user = user;
       return allowFunction(null, true);

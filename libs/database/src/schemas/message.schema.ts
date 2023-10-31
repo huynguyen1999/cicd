@@ -9,7 +9,7 @@ export class MessageSeenReceipt {
   user: mongoose.Types.ObjectId;
 
   @Prop({ required: true }) // Timestamp when the user saw the message
-  seen_at: Date;
+  time: Date;
 }
 
 @Schema()
@@ -21,11 +21,20 @@ export class MessageReactReceipt {
   reaction: ReactionType;
 
   @Prop({ type: Date, required: true })
-  react_at: Date;
+  time: Date;
 }
 
 @Schema()
 export class MessageMetadata {}
+
+@Schema()
+export class MessageHistory {
+  @Prop({ required: true })
+  content: string;
+
+  @Prop({ required: true })
+  time: Date;
+}
 
 @Schema({ versionKey: false })
 export class Message extends AbstractDocument {
@@ -66,10 +75,19 @@ export class Message extends AbstractDocument {
     type: [{ type: mongoose.Schema.Types.Mixed }],
     default: [],
   })
-  react_by?: MessageReactReceipt[];
+  reacted_by?: MessageReactReceipt[];
 
   @Prop({ type: Date, default: Date.now, index: true })
   created_at?: Date;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.Mixed }] })
+  history?: MessageHistory[];
+
+  @Prop({ type: Boolean, index: true, default: false })
+  is_deleted?: boolean;
+
+  @Prop({ type: Date, index: true })
+  deleted_at?: Date;
 }
 
 export type MessageDocument = HydratedDocument<Message>;

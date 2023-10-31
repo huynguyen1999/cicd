@@ -6,8 +6,9 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { RpcRequest } from '..';
 
-export class GetMessagesDto {
+export class GetMessagesDto  {
   @IsString()
   @IsNotEmpty()
   room_id: string;

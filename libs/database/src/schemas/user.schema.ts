@@ -23,8 +23,8 @@ export class User extends AbstractDocument {
   })
   status?: UserStatus;
 
-  @Prop({ type: Date, default: Date.now, index: true })
-  last_seen?: Date;
+  @Prop({ type: Date, default: Date.now })
+  last_activity_at?: Date;
 
   @Prop({ type: String })
   bio?: string;
@@ -32,26 +32,18 @@ export class User extends AbstractDocument {
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: [],
-    index: true,
   })
   friends_list?: string[];
 
   @Prop({
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     default: [],
-    index: true,
     select: false,
   })
   blocked_users?: string[];
 
-  @Prop({ type: [{ type: Object }], default: [], select: false })
-  chat_history?: object[];
-
   @Prop({ type: Object, default: {}, select: false })
   settings?: object;
-
-  @Prop({ select: false })
-  token?: string;
 
   @Prop({
     default: UserRole.User,
@@ -65,9 +57,6 @@ export class User extends AbstractDocument {
 
   @Prop({ select: false })
   last_ip_address?: string;
-
-  @Prop({ type: Object, select: false })
-  device_information?: object;
 
   @Prop({ default: false, select: false })
   two_factor_authentication?: boolean;
@@ -83,9 +72,10 @@ export class User extends AbstractDocument {
     ref: 'User',
     select: false,
     default: null,
-    index: true,
   })
   created_by?: User;
+
+  session?: string;
 }
 
 export type UserDocument = HydratedDocument<User>;

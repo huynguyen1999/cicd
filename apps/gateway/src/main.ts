@@ -1,10 +1,17 @@
-import { NestFactory } from '@nestjs/core';
+import {
+  ActivityTrackerInterceptor,
+  LoggingInterceptor,
+  ResponseInterceptor,
+} from '@app/common';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { GatewayModule } from './gateway.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { SocketIoAdapter } from './adapters';
 import { RabbitmqService } from '@app/rabbitmq';
+import { RedisService } from '@app/redis';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { AllExceptionsFilter } from './filters';
 import * as cookieParser from 'cookie-parser';
 import * as os from 'os';
 import * as nodeCluster from 'cluster';
@@ -24,14 +31,23 @@ async function bootstrap() {
   );
   const configService = app.get(ConfigService);
   const rmqService = app.get(RabbitmqService);
+  const redisService = app.get(RedisService);
+  const reflector = app.get(Reflector);
   const port = configService.get('PORT');
   const redisSocketIoAdapter = new SocketIoAdapter(
     app,
     configService,
     rmqService,
+    redisService,
   );
   await redisSocketIoAdapter.connectToRedis();
   app.useWebSocketAdapter(redisSocketIoAdapter);
+  app.useGlobalInterceptors(
+    new ActivityTrackerInterceptor(reflector, redisService),
+    new LoggingInterceptor(),
+    new ResponseInterceptor(),
+  );
+  app.useGlobalFilters(new AllExceptionsFilter());
   await app.listen(port, () => {
     console.log(
       `API Gateway service is running on port ${port}, in process ${process.pid}`,

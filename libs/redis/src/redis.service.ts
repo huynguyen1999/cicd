@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { REDIS_OPTIONS } from '../../common/src';
 import { IRedisOptions } from './redis.interfaces';
-import { createClient } from 'redis';
+import { SetOptions, createClient } from 'redis';
 @Injectable()
 export class RedisService {
   private client = createClient(this.redisOptions);
@@ -20,20 +20,54 @@ export class RedisService {
     })();
   }
   async get(key: string) {
-    return await this.client.get(key);
+    const rawData = await this.client.get(key);
+    try {
+      return JSON.parse(rawData);
+    } catch (exception) {
+      return rawData;
+    }
   }
-  async set(key: string, value: string, ttl?: number) {
-    return await this.client.set(key, value, { EX: ttl });
+
+  async getMultiple(keys: string[]) {
+    const rawData = await this.client.mGet(keys);
+    const data = rawData.map((rawItem) => {
+      if (!rawItem) return null;
+      try {
+        return JSON.parse(rawItem);
+      } catch (exception) {
+        return rawItem;
+      }
+    });
+    return data;
   }
+  async getDuration(key: string) {
+    return await this.client.pTTL(key);
+  }
+
+  async getByPattern(pattern: string) {
+    const keys = await this.client.keys(pattern);
+    if (!keys?.length) {
+      return null;
+    }
+    const result = await this.getMultiple(keys);
+    return result;
+  }
+
+  async set(key: string, value: any, options?: SetOptions) {
+    console.log(`setting ${key} with options ${JSON.stringify(options)} with value ${JSON.stringify(value)}`);
+    return await this.client.set(key, JSON.stringify(value), options);
+  }
+
   async deleteKey(key: string) {
     return await this.client.del(key);
   }
 
+  async setExpiration(key: string, ttl: number) {
+    return await this.client.pExpire(key, ttl);
+  }
+
   async unlink(key: string | string[]) {
     return await this.client.unlink(key);
-  }
-  async setIfNotExists(key: string, value: string, ttl?: number) {
-    return await this.client.set(key, value, { EX: ttl, NX: true });
   }
 
   async setHash(key: string, field: string, value: string) {
@@ -51,7 +85,7 @@ export class RedisService {
   }
   async deleteMultipleKeys(pattern: string) {
     const scanResult = await this.client.scan(0, { MATCH: pattern });
-    if (!scanResult.keys?.length) return;
+    if (!scanResult.keys?.length) return null;
     return await this.client.unlink(scanResult.keys || []);
   }
 }

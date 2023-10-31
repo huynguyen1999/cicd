@@ -1,5 +1,5 @@
-import { RabbitRPC } from '@golevelup/nestjs-rabbitmq';
-import { Controller } from '@nestjs/common';
+import { RabbitPayload, RabbitRPC } from '@golevelup/nestjs-rabbitmq';
+import { Controller, UseGuards } from '@nestjs/common';
 import {
   CheckUserInRoomDto,
   CreateRoomDto,
@@ -11,7 +11,9 @@ import {
   RpcRequest,
 } from '@app/common';
 import { RoomService } from '../services';
+import { StsAuthGuard } from '@app/sts-auth';
 
+@UseGuards(StsAuthGuard)
 @Controller()
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
@@ -21,17 +23,10 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.create',
   })
-  async createRoom(payload: RpcRequest<CreateRoomDto>) {
-    try {
-      const { data, user_id } = payload;
-      const newRoom = await this.roomService.createRoom(data, user_id);
-      return newRoom;
-    } catch (exception) {
-      return {
-        success: false,
-        exception,
-      };
-    }
+  async createRoom(@RabbitPayload() payload: RpcRequest<CreateRoomDto>) {
+    const { user, data } = payload;
+    const newRoom = await this.roomService.createRoom(data, user);
+    return newRoom;
   }
 
   @RabbitRPC({
@@ -39,17 +34,10 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.getRooms',
   })
-  async getRooms(payload: RpcRequest<GetRoomsDto>) {
-    try {
-      const { user_id, data } = payload;
-      const rooms = await this.roomService.getRooms(user_id, data);
-      return rooms;
-    } catch (exception) {
-      return {
-        success: false,
-        exception,
-      };
-    }
+  async getRooms(@RabbitPayload() payload: RpcRequest<GetRoomsDto>) {
+    const { user, data } = payload;
+    const rooms = await this.roomService.getRooms(data, user);
+    return rooms;
   }
 
   @RabbitRPC({
@@ -57,17 +45,10 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.joinRoom',
   })
-  async joinRoom(payload: RpcRequest<JoinRoomDto>) {
-    try {
-      const { user_id, data } = payload;
-      const rooms = await this.roomService.joinRoom(user_id, data);
-      return rooms;
-    } catch (exception) {
-      return {
-        success: false,
-        exception,
-      };
-    }
+  async joinRoom(@RabbitPayload() payload: RpcRequest<JoinRoomDto>) {
+    const { user, data } = payload;
+    const rooms = await this.roomService.joinRoom(data, user);
+    return rooms;
   }
 
   @RabbitRPC({
@@ -75,21 +56,15 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.handleJoinRequest',
   })
-  async handleJoinRequest(payload: RpcRequest<HandleJoinRequestDto>) {
-    try {
-      const { user_id, data } = payload;
-      const { request, joined_user } = await this.roomService.handleJoinRequest(
-        user_id,
-        data,
-      );
-      return { request, joined_user };
-    } catch (exception) {
-      console.error('exception: ', exception);
-      return {
-        success: false,
-        exception,
-      };
-    }
+  async handleJoinRequest(
+    @RabbitPayload() payload: RpcRequest<HandleJoinRequestDto>,
+  ) {
+    const { user, data } = payload;
+    const { request, joined_user } = await this.roomService.handleJoinRequest(
+      data,
+      user,
+    );
+    return { request, joined_user };
   }
 
   @RabbitRPC({
@@ -97,15 +72,12 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.checkUserInRoom',
   })
-  async checkUserInRoom(payload: RpcRequest<CheckUserInRoomDto>) {
-    try {
-      const { user_id, data } = payload;
-      const result = await this.roomService.checkUserInRoom(user_id, data);
-      return result;
-    } catch (exception) {
-      console.error('exception: ', exception);
-      return false;
-    }
+  async checkUserInRoom(
+    @RabbitPayload() payload: RpcRequest<CheckUserInRoomDto>,
+  ) {
+    const { user, data } = payload;
+    const result = await this.roomService.checkUserInRoom(data, user);
+    return result;
   }
 
   @RabbitRPC({
@@ -113,17 +85,12 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.kickUser',
   })
-  async kickUserFromRoom(payload: RpcRequest<KickUserFromRoomDto>) {
-    try {
-      const { user_id, data } = payload;
-      const result = await this.roomService.kickUserFromRoom(user_id, data);
-      return result;
-    } catch (exception) {
-      return {
-        success: false,
-        exception,
-      };
-    }
+  async kickUserFromRoom(
+    @RabbitPayload() payload: RpcRequest<KickUserFromRoomDto>,
+  ) {
+    const { user, data } = payload;
+    const result = await this.roomService.kickUserFromRoom(data, user);
+    return result;
   }
 
   @RabbitRPC({
@@ -131,16 +98,11 @@ export class RoomController {
     exchange: 'exchange',
     queue: 'room.inviteUser',
   })
-  async inviteUserToRoom(payload: RpcRequest<InviteUserToRoomDto>) {
-    try {
-      const { user_id, data } = payload;
-      const result = await this.roomService.inviteUserToRoom(user_id, data);
-      return result;
-    } catch (exception) {
-      return {
-        success: false,
-        exception,
-      };
-    }
+  async inviteUserToRoom(
+    @RabbitPayload() payload: RpcRequest<InviteUserToRoomDto>,
+  ) {
+    const { user, data } = payload;
+    const result = await this.roomService.inviteUserToRoom(data, user);
+    return result;
   }
 }

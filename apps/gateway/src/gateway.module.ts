@@ -6,8 +6,6 @@ import { AuthModule } from './modules/auth/auth.module';
 import * as modules from './modules';
 import { RedisModule } from '@app/redis';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { WsThrottlerGuard } from './guards';
 
 @Module({
   imports: [
@@ -16,6 +14,7 @@ import { WsThrottlerGuard } from './guards';
       validationSchema: Joi.object({
         PORT: Joi.number().required(),
         SOCKET_IO_PORT: Joi.number().required(),
+        SERVICE_NAME: Joi.string().required(),
         MONGODB_URI: Joi.string().required(),
         RABBITMQ_URI: Joi.string().required(),
         REDIS_URI: Joi.string().required(),
@@ -42,12 +41,6 @@ import { WsThrottlerGuard } from './guards';
     RabbitmqModule,
     AuthModule,
     ...Object.values(modules),
-  ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: WsThrottlerGuard,
-    },
   ],
 })
 export class GatewayModule {}

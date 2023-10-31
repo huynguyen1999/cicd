@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { RpcRequest } from '..';
 
-export class KickUserFromRoomDto {
+export class KickUserFromRoomDto  {
   @IsString()
   @IsNotEmpty()
   room_id: string;

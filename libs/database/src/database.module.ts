@@ -5,8 +5,12 @@ import * as repositories from './repositories';
 import {
   Message,
   MessageSchema,
+  RefreshToken,
+  RefreshTokenSchema,
   Room,
   RoomSchema,
+  Session,
+  SessionSchema,
   User,
   UserSchema,
 } from './schemas';
@@ -24,6 +28,8 @@ import {
       { name: User.name, schema: UserSchema },
       { name: Room.name, schema: RoomSchema },
       { name: Message.name, schema: MessageSchema },
+      { name: Session.name, schema: SessionSchema },
+      { name: RefreshToken.name, schema: RefreshTokenSchema },
     ]),
   ],
   providers: [...Object.values(repositories)],

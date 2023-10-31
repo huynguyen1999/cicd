@@ -9,17 +9,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { RabbitmqService } from '@app/rabbitmq';
-import { Response } from 'express';
-import { LocalGuard } from '../../guards';
+import { Request, Response } from 'express';
 import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import {
   ChangePasswordDto,
   LoginDto,
   RegisterDto,
-  AUTH_COOKIE_NAME,
+  SESSION_COOKIE_NAME,
+  UntrackUserActivity,
 } from '@app/common';
 import { ChatGateway } from '../chat/chat.gateway';
+import { SessionGuard } from '../../guards';
 
 @Controller('auth')
 export class AuthController {
@@ -30,53 +31,76 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: RegisterDto, @Res() res: Response) {
-    const result = await this.rabbitmqService.requestFromRPC(
-      body,
+    const result = await this.rabbitmqService.request(
+      { data: body },
       'auth.register',
     );
     return res.status(200).send(result);
   }
 
   @Post('login')
-  async login(@Body() body: LoginDto, @Res() res: Response) {
-    const result: any = await this.rabbitmqService.requestFromRPC(
-      body,
+  async login(
+    @Body() body: LoginDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const result: any = await this.rabbitmqService.request(
+      {
+        data: {
+          ...body,
+          ip_address:
+            req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+          user_agent: req.headers['user-agent'],
+        },
+      },
       'auth.login',
     );
-    const { token, maxAge, httpOnly } = result;
-    res.cookie(AUTH_COOKIE_NAME, token, { httpOnly, maxAge });
-
+    if (result.success && result.data) {
+      const { session, duration, http_only } = result.data;
+      res.cookie(SESSION_COOKIE_NAME, session, {
+        httpOnly: http_only,
+        maxAge: duration,
+      });
+    }
     return res.send(result);
   }
 
-  @UseGuards(LocalGuard)
+  @UntrackUserActivity()
+  @UseGuards(SessionGuard)
   @Post('logout')
-  async logout(@CurrentUser() user: User, @Res() res: Response) {
-    const result: any = await this.rabbitmqService.requestFromRPC(
-      { user_id: user._id },
+  async logout(
+    @CurrentUser() user: User,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    const result: any = await this.rabbitmqService.request(
+      { data: { session_id: req.cookies.session }, user },
       'auth.logout',
     );
-    const { token, maxAge, httpOnly } = result;
-    res.cookie(AUTH_COOKIE_NAME, token, { httpOnly, maxAge });
+    res.cookie(SESSION_COOKIE_NAME, '', { httpOnly: true, maxAge: 0 });
     this.chatGateway.adapter.emit('logout', { user_id: user._id });
     return res.send(result);
   }
 
-  @UseGuards(LocalGuard)
+  @UseGuards(SessionGuard)
   @Get('profile')
-  getProfile(@CurrentUser() user: User, @Res() res: Response) {
-    return res.send(user);
+  async getProfile(@CurrentUser() user: User, @Res() res: Response) {
+    const profile: any = await this.rabbitmqService.request(
+      { user },
+      'user.getProfile',
+    );
+    return res.send(profile);
   }
 
-  @UseGuards(LocalGuard)
+  @UseGuards(SessionGuard)
   @Put('changePassword')
   async changePassword(
     @Body() body: ChangePasswordDto,
     @CurrentUser() user: User,
     @Res() res: Response,
   ) {
-    const result: any = await this.rabbitmqService.requestFromRPC(
-      { user_id: user._id, data: body },
+    const result: any = await this.rabbitmqService.request(
+      { data: body, user },
       'auth.changePassword',
     );
     return res.send(result);

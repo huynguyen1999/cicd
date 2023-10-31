@@ -1,4 +1,4 @@
-import { OnModuleInit, UseFilters, UseGuards } from '@nestjs/common';
+import { UseGuards, UseInterceptors } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,19 +10,31 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { LocalGuard, RoomGuard, WsThrottlerGuard } from '../../guards';
+import { RoomGuard, SessionGuard, WsThrottlerGuard } from '../../guards';
 import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import { RedisService } from '@app/redis';
 import { Adapter } from 'socket.io-adapter';
 import {
   ConnectRoomDto,
+  DeleteMessagesDto,
+  EditMessageDto,
+  GetUsersStatusDto,
   MessagingDto,
+  ReactMessageDto,
+  SeenMessagesDto,
+  USER_ACTIVITY_INTERVAL_MS,
   USER_CONNECTED_ROOMS,
   USER_CONNECTED_SOCKETS,
+  USER_DATA,
+  UntrackUserActivity,
+  UserStatus,
 } from '@app/common';
 import { RabbitmqService } from '@app/rabbitmq';
+import { ActivityTrackerInterceptor, LoggingInterceptor } from '@app/common';
 
+@UseInterceptors(ActivityTrackerInterceptor, LoggingInterceptor)
+@UseGuards(SessionGuard, RoomGuard, WsThrottlerGuard)
 @WebSocketGateway()
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -50,10 +62,9 @@ export class ChatGateway
     this.adapter.on('logout', (data: { user_id: string }) =>
       this.handleLogoutEvent(data),
     );
-    await this.redisService.deleteMultipleKeys(`${USER_CONNECTED_ROOMS('')}*`);
-    await this.redisService.deleteMultipleKeys(
-      `${USER_CONNECTED_SOCKETS('')}*`,
-    );
+
+    this.redisService.deleteMultipleKeys(`${USER_CONNECTED_ROOMS('')}*`);
+    this.redisService.deleteMultipleKeys(`${USER_CONNECTED_SOCKETS('')}*`);
   }
 
   async handleConnectRoomEvent(data: {
@@ -90,62 +101,31 @@ export class ChatGateway
     this.redisService.deleteKey(USER_CONNECTED_ROOMS(data.user_id));
   }
 
-  async handleConnection(client: Socket, args: any) {
+  handleConnection(client: Socket, args: any) {
     const user: any = client.handshake.headers.user;
     if (!user) return;
-    await this.redisService.setHash(
+    this.redisService.setHash(
       USER_CONNECTED_SOCKETS(user._id),
       client.id,
       Date.now().toString(),
     );
+    this.rabbitmqService.request(
+      { data: { status: UserStatus.Online }, user },
+      'user.updateUserStatus',
+    );
   }
 
-  async handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket) {
     const user: any = client.handshake.headers.user;
     if (!user) return;
-    await this.redisService.deleteHash(
-      USER_CONNECTED_ROOMS(user._id),
-      client.id,
-    );
-    await this.redisService.deleteHash(
-      USER_CONNECTED_SOCKETS(user._id),
-      client.id,
+    this.redisService.deleteHash(USER_CONNECTED_ROOMS(user._id), client.id);
+    this.redisService.deleteHash(USER_CONNECTED_SOCKETS(user._id), client.id);
+    this.rabbitmqService.request(
+      { data: { status: UserStatus.Offline }, user },
+      'user.updateUserStatus',
     );
   }
 
-  @UseGuards(LocalGuard, RoomGuard, WsThrottlerGuard)
-  @SubscribeMessage('message')
-  async onNewMessage(
-    @CurrentUser() user: User,
-    @MessageBody() body: MessagingDto,
-    @ConnectedSocket() client: Socket,
-  ) {
-    const newMessage = await this.rabbitmqService.requestFromRPC(
-      { user_id: user._id, data: body },
-      'chat.messaging',
-    );
-    this.server.to(body.room_id).emit('roomMessages', {
-      messages: [newMessage],
-    });
-  }
-
-  @UseGuards(LocalGuard, RoomGuard)
-  @SubscribeMessage('seenMessages')
-  async onSeenMessages(
-    @CurrentUser() user: User,
-    @MessageBody() body: { message_ids: string[]; room_id: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    const seenMessages = await this.rabbitmqService.requestFromRPC(
-      { user_id: user._id, data: body },
-      'chat.seenMessages',
-    );
-    this.server
-      .to(body.room_id)
-      .emit('roomMessages', { messages: seenMessages });
-  }
-
-  @UseGuards(LocalGuard, RoomGuard)
   @SubscribeMessage('connectRoom')
   async onJoinRoom(
     @CurrentUser() user: User,
@@ -158,18 +138,17 @@ export class ChatGateway
       socket_id: client.id,
       room_id: body.room_id,
     });
-
-    const latestMessages = await this.rabbitmqService.requestFromRPC(
+    const result = await this.rabbitmqService.request(
       {
-        user_id: user._id,
         data: { room_id: body.room_id, limit: 10, skip: 0 },
+        user,
       },
       'chat.getMessages',
     );
-    client.emit('roomMessages', { messages: latestMessages });
+    if (!result.success) return;
+    client.emit('roomNewMessages', { messages: result.data });
   }
 
-  @UseGuards(LocalGuard, RoomGuard)
   @SubscribeMessage('typingMessage')
   async onTypingMessage(
     @CurrentUser() user: User,
@@ -177,5 +156,119 @@ export class ChatGateway
     @ConnectedSocket() client: Socket,
   ) {
     client.to(body.room_id).emit('roomTypingMessage', { user });
+  }
+
+  @SubscribeMessage('message')
+  async onNewMessage(
+    @CurrentUser() user: User,
+    @MessageBody() body: MessagingDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = await this.rabbitmqService.request(
+      { data: body, user },
+      'chat.message',
+    );
+    if (!result.success) return;
+    this.server.to(body.room_id).emit('roomNewMessages', {
+      messages: [result.data],
+    });
+  }
+
+  @SubscribeMessage('seenMessages')
+  async onSeenMessages(
+    @CurrentUser() user: User,
+    @MessageBody() body: SeenMessagesDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = await this.rabbitmqService.request(
+      { data: body, user },
+      'chat.seenMessages',
+    );
+    if (!result.success) return;
+    this.server
+      .to(body.room_id)
+      .emit('roomSeenMessages', { messages: result.data });
+  }
+
+  @SubscribeMessage('reactMessage')
+  async onReactMessage(
+    @CurrentUser() user: User,
+    @MessageBody() body: ReactMessageDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = await this.rabbitmqService.request(
+      { data: body, user },
+      'chat.reactMessage',
+    );
+    if (!result.success) return;
+    this.server
+      .to(body.room_id)
+      .emit('roomReactedMessages', { messages: [result.data] });
+  }
+
+  @SubscribeMessage('editMessage')
+  async onEditMessage(
+    @CurrentUser() user: User,
+    @MessageBody() body: EditMessageDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = await this.rabbitmqService.request(
+      { data: body, user },
+      'chat.editMessage',
+    );
+    if (!result.success) return;
+    this.server
+      .to(body.room_id)
+      .emit('roomEditedMessages', { messages: [result.data] });
+  }
+
+  @SubscribeMessage('deleteMessages')
+  async onDeleteMessage(
+    @CurrentUser() user: User,
+    @MessageBody() body: DeleteMessagesDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = await this.rabbitmqService.request(
+      { data: body, user },
+      'chat.deleteMessages',
+    );
+    if (!result.success) return;
+    this.server
+      .to(body.room_id)
+      .emit('roomDeletedMessages', { messages: result.data });
+  }
+
+  // send heartbeat to the server every 5 seconds
+  @UntrackUserActivity()
+  @SubscribeMessage('heartbeat')
+  async onHeartbeat(
+    @CurrentUser() user: User,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { last_activity_at } = user;
+    const lastActivityTime = Date.parse(last_activity_at.toString());
+    const currentTime = Date.now();
+
+    if (currentTime - lastActivityTime > USER_ACTIVITY_INTERVAL_MS) {
+      user.status = UserStatus.Away;
+      this.redisService.set(USER_DATA(user._id.toString()), user);
+    }
+
+    client.broadcast.emit('usersStatus', { users: [user] });
+  }
+
+  // get users status every 5 seconds
+  @UntrackUserActivity()
+  @SubscribeMessage('usersStatus')
+  async getUsersStatus(
+    @CurrentUser() user: User,
+    @MessageBody() body: GetUsersStatusDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const usersStatus = await this.rabbitmqService.request(
+      { data: { user_ids: body.user_ids }, user },
+      'user.getUsersStatus',
+    );
+    client.emit('usersStatus', { users: usersStatus });
   }
 }

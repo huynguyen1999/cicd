@@ -1,8 +1,8 @@
 export enum UserStatus {
   Online = 'online',
   Offline = 'offline',
+  Away = 'away',
   Banned = 'banned',
-  Deleted = 'deleted',
 }
 
 export enum UserRole {

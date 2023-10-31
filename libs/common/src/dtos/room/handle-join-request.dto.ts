@@ -1,7 +1,8 @@
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
 import { JoinRequestStatus } from '../../constants';
+import { RpcRequest } from '..';
 
-export class HandleJoinRequestDto {
+export class HandleJoinRequestDto  {
   @IsString()
   @IsNotEmpty()
   room_id: string;

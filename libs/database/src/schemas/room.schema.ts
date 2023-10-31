@@ -23,7 +23,7 @@ export class JoinRequest {
   introduction?: string;
 
   @Prop({ type: Date, default: Date.now })
-  created_at?: Date;
+  time?: Date;
 }
 
 @Schema({ versionKey: false })
@@ -45,7 +45,6 @@ export class Room extends AbstractDocument {
     type: [{ type: mongoose.Schema.Types.Mixed }],
     default: [],
     select: false,
-    index: true,
   })
   join_requests?: JoinRequest[];
 

@@ -1,1 +1,3 @@
-export class GetRoomsDto {}
+import { RpcRequest } from '..';
+
+export class GetRoomsDto  {}

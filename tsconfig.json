@@ -53,6 +53,26 @@
       ],
       "@app/constant/*": [
         "libs/constant/src/*"
+      ],
+      "@app/jwt-auth": [
+        "libs/jwt-auth/src"
+      ],
+      "@app/jwt-auth/*": [
+        "libs/jwt-auth/src/*"
+      ],
+      "@app/sts-auth": [
+        "libs/sts-auth/src",
+        "libs/sts-auth/src"
+      ],
+      "@app/sts-auth/*": [
+        "libs/sts-auth/src/*",
+        "libs/sts-auth/src/*"
+      ],
+      "k/sts-auth": [
+        "libs/sts-auth/src"
+      ],
+      "k/sts-auth/*": [
+        "libs/sts-auth/src/*"
       ]
     }
   }

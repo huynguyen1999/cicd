@@ -9,7 +9,13 @@ import {
   JoinRoomDto,
   KickUserFromRoomDto,
 } from '@app/common';
-import { Room, RoomRepository, User, UserRepository } from '@app/database';
+import {
+  Room,
+  RoomDocument,
+  RoomRepository,
+  User,
+  UserRepository,
+} from '@app/database';
 import { Types } from 'mongoose';
 import { v4 as uuid } from 'uuid';
 
@@ -19,42 +25,46 @@ export class RoomService {
     private readonly roomRepository: RoomRepository,
     private readonly userRepository: UserRepository,
   ) {}
-  async createRoom(data: CreateRoomDto, userId: string) {
-    const userObjectId = new Types.ObjectId(userId);
+  async createRoom(data: CreateRoomDto, user: User) {
+    const userObjectId = new Types.ObjectId(user._id.toString());
     return await this.roomRepository.create({
       ...data,
       participants: [userObjectId],
       created_by: userObjectId,
-    });
+    } as RoomDocument);
   }
 
-  async getRooms(userId: string, data: GetRoomsDto) {
+  async getRooms(data: GetRoomsDto, user: User) {
     return await this.roomRepository.find(
-      { created_by: userId },
+      { created_by: user._id },
       {},
       { populate: 'participants' },
     );
   }
 
-  private userIsAlreadyInRoom(userId: string, room: Room) {
+  private userIsAlreadyInRoom(room: Room, user: User) {
     if (
-      room.participants.find((participant) => participant.toString() === userId)
+      room.participants.find(
+        (participant) => participant.toString() === user._id.toString(),
+      )
     ) {
       return true;
     }
     return false;
   }
 
-  private userHasAlreadyRequestedToJoin(userId: string, room: Room) {
+  private userHasAlreadyRequestedToJoin(room: Room, user: User) {
     if (
-      room.join_requests.find((request) => request.user.toString() === userId)
+      room.join_requests.find(
+        (request) => request.user.toString() === user._id.toString(),
+      )
     ) {
       return true;
     }
     return false;
   }
 
-  async joinRoom(userId: string, data: JoinRoomDto) {
+  async joinRoom(data: JoinRoomDto, user: User) {
     const room = await this.roomRepository.findOne(
       { _id: data.room_id },
       '+participants +join_requests',
@@ -62,18 +72,19 @@ export class RoomService {
     if (!room) {
       throw new BadRequestException('Room not found');
     }
-    if (this.userIsAlreadyInRoom(userId, room)) {
+    if (this.userIsAlreadyInRoom(room, user)) {
       throw new BadRequestException('User already in the room');
     }
-    if (this.userHasAlreadyRequestedToJoin(userId, room)) {
+    if (this.userHasAlreadyRequestedToJoin(room, user)) {
       throw new BadRequestException('User has already requested to join');
     }
 
     const joinRoomRequest = {
       id: uuid(),
-      user: new Types.ObjectId(userId),
+      user: new Types.ObjectId(user._id),
       introduction: data.introduction,
       status: JoinRequestStatus.Pending,
+      time: new Date(),
     };
 
     return await this.roomRepository.findOneAndUpdate(
@@ -88,7 +99,7 @@ export class RoomService {
     );
   }
 
-  async handleJoinRequest(userId: string, data: HandleJoinRequestDto) {
+  async handleJoinRequest(data: HandleJoinRequestDto, user: User) {
     const room = await this.roomRepository.findOne(
       { _id: data.room_id },
       '+join_requests +created_by',
@@ -97,7 +108,7 @@ export class RoomService {
     if (!room) {
       throw new BadRequestException('Room not found');
     }
-    if (room.created_by?.toString() !== userId) {
+    if (room.created_by?.toString() !== user._id.toString()) {
       throw new BadRequestException('You are not the owner of the room');
     }
     const joinRequestIndex = room.join_requests.findIndex(
@@ -144,7 +155,7 @@ export class RoomService {
     };
   }
 
-  async checkUserInRoom(userId: string, data: CheckUserInRoomDto) {
+  async checkUserInRoom(data: CheckUserInRoomDto, user: User) {
     if (Types.ObjectId.isValid(data.room_id) === false) {
       throw new BadRequestException('Invalid room id');
     }
@@ -152,11 +163,11 @@ export class RoomService {
     if (!room) {
       throw new BadRequestException('Room not found');
     }
-    return this.userIsAlreadyInRoom(userId, room);
+    return this.userIsAlreadyInRoom(room, user);
   }
 
-  async kickUserFromRoom(adminUserId: string, data: KickUserFromRoomDto) {
-    if (data.user_id === adminUserId) {
+  async kickUserFromRoom(data: KickUserFromRoomDto, admin: User) {
+    if (data.user_id === admin._id.toString()) {
       throw new BadRequestException('You cannot kick yourself');
     }
     const [userToBeKicked, room] = await Promise.all([
@@ -172,7 +183,7 @@ export class RoomService {
     if (!userToBeKicked) {
       throw new BadRequestException('User not found');
     }
-    if (room.created_by?.toString() !== adminUserId) {
+    if (room.created_by?.toString() !== admin._id.toString()) {
       throw new BadRequestException('You are not the owner of the room');
     }
     const participants = room.participants.filter(
@@ -188,7 +199,7 @@ export class RoomService {
     return { user: userToBeKicked };
   }
 
-  async inviteUserToRoom(userId: string, data: InviteUserToRoomDto) {
+  async inviteUserToRoom(data: InviteUserToRoomDto, inviter: User) {
     const [room, user] = await Promise.all([
       this.roomRepository.findOne(
         { room_id: data.room_id },
@@ -202,12 +213,12 @@ export class RoomService {
     if (!user) {
       throw new BadRequestException('The user you want to invite is not found');
     }
-    if (this.userIsAlreadyInRoom(data.user_id, room)) {
+    if (this.userIsAlreadyInRoom(room, user)) {
       throw new BadRequestException(
         'The user you want to invite is already in the room',
       );
     }
-    if (this.userHasAlreadyRequestedToJoin(data.user_id, room)) {
+    if (this.userHasAlreadyRequestedToJoin(room, user)) {
       throw new BadRequestException('User has already requested to join');
     }
 
