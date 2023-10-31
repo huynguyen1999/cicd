@@ -265,10 +265,10 @@ export class ChatGateway
     @MessageBody() body: GetUsersStatusDto,
     @ConnectedSocket() client: Socket,
   ) {
-    const usersStatus = await this.rabbitmqService.request(
+    const result = await this.rabbitmqService.request(
       { data: { user_ids: body.user_ids }, user },
       'user.getUsersStatus',
     );
-    client.emit('usersStatus', { users: usersStatus });
+    client.emit('usersStatus', { users: result.data });
   }
 }

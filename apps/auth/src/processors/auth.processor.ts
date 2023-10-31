@@ -5,8 +5,14 @@ import {
   ExpireSessionDto,
   SessionStatus,
   USER_DATA,
+  UserStatus,
 } from '@app/common';
-import { RefreshTokenRepository, SessionRepository } from '@app/database';
+import {
+  RefreshTokenRepository,
+  SessionRepository,
+  User,
+  UserRepository,
+} from '@app/database';
 import { OnModuleInit } from '@nestjs/common';
 import { RedisService } from '@app/redis';
 
@@ -16,26 +22,26 @@ export class AuthProcessor implements OnModuleInit {
     private readonly sessionRepository: SessionRepository,
     private readonly refreshTokenRepository: RefreshTokenRepository,
     private readonly redisService: RedisService,
+    private readonly userRepository: UserRepository,
     @InjectQueue('auth') private readonly authQueue: Queue,
   ) {}
 
   async onModuleInit() {
-    // const repeatableJobs = await this.authQueue.getRepeatableJobs();
-    // for await (const job of repeatableJobs) {
-    //   if (job.name === '') {
-    //     await this.authQueue.removeRepeatableByKey(job.key);
-    //   }
-    // }
-    // await this.authQueue.add(
-    //   'updateUsersStatus',
-    //   {},
-    //   {
-    //     repeat: {
-    //       cron: '* * * * *', // every minute
-    //       //cron: '0 * * * *',// every hour
-    //     },
-    //   },
-    // );
+    const repeatableJobs = await this.authQueue.getRepeatableJobs();
+    for await (const job of repeatableJobs) {
+      if (job.name === '') {
+        await this.authQueue.removeRepeatableByKey(job.key);
+      }
+    }
+    await this.authQueue.add(
+      'updateUsersStatus',
+      {},
+      {
+        repeat: {
+          cron: '* * * * *', // every minute
+        },
+      },
+    );
   }
 
   @Process('expireSession')
@@ -57,6 +63,10 @@ export class AuthProcessor implements OnModuleInit {
       if (!session) {
         console.log('Session not found');
       }
+      await this.userRepository.findOneAndUpdate(
+        { _id: session.user },
+        { status: UserStatus.Offline },
+      );
     } catch (error) {
       console.log(`Error in AuthProcessor.expireSession: ${error}`);
     }
@@ -89,10 +99,19 @@ export class AuthProcessor implements OnModuleInit {
   @Process('updateUsersStatus')
   async updateUsersStatus(job: Job<{}>) {
     try {
-      const sessionUsers = await this.redisService.getByPattern(
-        `${USER_DATA('')}*`,
-      );
-      console.log(sessionUsers);
+      const sessionUsers: Partial<User>[] =
+        await this.redisService.getByPattern(`${USER_DATA('')}*`);
+      if (!sessionUsers?.length) return;
+      const operations = sessionUsers.map((user) => ({
+        updateOne: {
+          filter: { _id: user._id },
+          update: {
+            status: user.status,
+            last_activity_at: user.last_activity_at,
+          },
+        },
+      }));
+      await this.userRepository.bulkWrite(operations);
     } catch (error) {
       console.log(`Error in AuthProcessor.updateUsersStatus: ${error}`);
     }

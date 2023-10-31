@@ -134,6 +134,7 @@ export class UserService {
     const userDataKeys: string[] = data.user_ids.map((userId) =>
       USER_DATA(userId),
     );
+    console.log(userDataKeys);
     const users: Partial<User>[] = await this.redisService.getMultiple(
       userDataKeys,
     );

@@ -82,6 +82,10 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     });
   }
 
+  async bulkWrite(operations: any[]) {
+    return await this.model.bulkWrite(operations);
+  }
+
   async startTransaction() {
     const session = await this.connection.startSession();
     session.startTransaction();
