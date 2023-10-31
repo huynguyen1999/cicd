@@ -9,7 +9,10 @@
     "webpack": true,
     "tsConfigPath": "apps/gateway/tsconfig.app.json",
     "assets": [
-      "**/*.pem"
+      "**/*.pem",
+      "**/*.py",
+      "**/*.csv",
+      "**/*.h5"
     ],
     "watchAssets": false,
     "plugins": []

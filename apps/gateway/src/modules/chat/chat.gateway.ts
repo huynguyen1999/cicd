@@ -172,6 +172,15 @@ export class ChatGateway
     this.server.to(body.room_id).emit('roomNewMessages', {
       messages: [result.data],
     });
+    const analyzeResult = await this.rmqService.request(
+      { data: body, user },
+      'message.analyzeToxicity',
+    );
+    if (analyzeResult.data.is_toxic) {
+      this.server.to(body.room_id).emit('roomToxicMessages', {
+        messages: [{ _id: result.data._id }],
+      });
+    }
   }
 
   @SubscribeMessage('seenMessages')

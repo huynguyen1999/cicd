@@ -13,6 +13,15 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<Response<T>> {
-    return next.handle().pipe(map((data) => ({ success: true, data })));
+    const haveResponse =
+      (context.getType() === 'http' && context.getType() === 'ws') ||
+      typeof context.switchToRpc().getContext()?.properties?.replyTo !==
+        'undefined';
+
+    if (haveResponse) {
+      return next.handle().pipe(map((data) => ({ success: true, data })));
+    } else {
+      return next.handle();
+    }
   }
 }
