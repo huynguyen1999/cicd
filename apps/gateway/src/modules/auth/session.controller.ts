@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { SessionGuard } from '../../guards';
 import { RabbitmqService } from '@app/rabbitmq';
-import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import { Response } from 'express';
 import {
+  CurrentUser,
   RefreshSessionDto,
   RevokeSessionDto,
   RevokeSessionsDto,

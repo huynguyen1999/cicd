@@ -11,7 +11,7 @@ import { SocketIoAdapter } from './adapters';
 import { RabbitmqService } from '@app/rabbitmq';
 import { RedisService } from '@app/redis';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { AllExceptionsFilter } from './filters';
+import { AllExceptionsFilter } from '@app/common';
 import * as cookieParser from 'cookie-parser';
 import * as os from 'os';
 import * as nodeCluster from 'cluster';

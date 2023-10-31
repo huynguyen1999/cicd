@@ -9,7 +9,7 @@
     "build": "nest build",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "start": "nest start",
-    "start:all": "concurrently --names \"Api Gateway, Auth Microservice, Chat Microservice\" -c \"auto\" \"nest start --watch\" \"nest start --watch auth\" \"nest start --watch chat\"",
+    "start:all": "concurrently --names \"Api Gateway, Auth MS, Chat MS, Message MS\" -c \"auto\" \"nest start --watch\" \"nest start --watch auth\" \"nest start --watch chat\" \"nest start --watch message\"",
     "start:dev": "nest start --watch $repo --exec \"bun run\"",
     "start:debug": "nest start  --debug --watch",
     "start:prod": "node dist/apps/web-chat/main",
@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@golevelup/nestjs-rabbitmq": "^4.0.0",
+    "@iamtraction/google-translate": "^2.0.1",
     "@nestjs/bull": "^10.0.1",
     "@nestjs/common": "^9.0.0",
     "@nestjs/config": "^3.1.1",

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Res, UseGuards } from '@nestjs/common';
 import { RabbitmqService } from '@app/rabbitmq';
 import { RoomGuard, SessionGuard } from '../../guards';
-import { CurrentUser } from '../../decorators';
+import { CurrentUser } from '@app/common';
 import { User } from '@app/database';
 import { Response } from 'express';
 import {

@@ -113,13 +113,6 @@ export class UserService {
     );
   }
 
-  async updateLastActivityTime(user: User) {
-    await this.userRepository.findOneAndUpdate(
-      { _id: user._id },
-      { last_activity_at: new Date() },
-    );
-  }
-
   async updateUserStatus(data: UpdateUserStatusDto, user: User) {
     const { status } = data;
 

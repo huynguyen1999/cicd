@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { RedisModule } from '@app/redis';
 import { DatabaseModule } from '@app/database';
 import { RabbitmqModule } from '@app/rabbitmq';
-import { RedisModule } from '@app/redis';
 import * as controllers from './controllers';
 import * as services from './services';
 import * as Joi from 'joi';
@@ -18,7 +18,7 @@ import * as Joi from 'joi';
         RABBITMQ_URI: Joi.string().required(),
         REDIS_URI: Joi.string().required(),
       }),
-      envFilePath: './apps/chat/.env',
+      envFilePath: './apps/message/.env',
     }),
     RedisModule.registerAsync({
       imports: [ConfigModule],
@@ -32,4 +32,4 @@ import * as Joi from 'joi';
   ],
   providers: [...Object.values(controllers), ...Object.values(services)],
 })
-export class ChatModule {}
+export class MessageModule {}

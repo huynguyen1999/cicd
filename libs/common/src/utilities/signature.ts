@@ -55,3 +55,18 @@ export const verifySignature = (
     );
   }
 };
+
+export const generateKeyPairSync = (modulusLength: number = 512) => {
+  const { privateKey, publicKey } = Crypto.generateKeyPairSync('rsa', {
+    modulusLength, // The length of the key in bits
+    publicKeyEncoding: {
+      type: 'spki',
+      format: 'pem',
+    },
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'pem',
+    },
+  });
+  return { privateKey, publicKey };
+};

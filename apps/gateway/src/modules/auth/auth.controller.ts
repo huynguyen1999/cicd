@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { RabbitmqService } from '@app/rabbitmq';
 import { Request, Response } from 'express';
-import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import {
   ChangePasswordDto,
+  CurrentUser,
   LoginDto,
   RegisterDto,
   SESSION_COOKIE_NAME,

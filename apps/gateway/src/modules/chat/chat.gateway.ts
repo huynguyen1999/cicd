@@ -11,12 +11,12 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomGuard, SessionGuard, WsThrottlerGuard } from '../../guards';
-import { CurrentUser } from '../../decorators';
 import { User } from '@app/database';
 import { RedisService } from '@app/redis';
 import { Adapter } from 'socket.io-adapter';
 import {
   ConnectRoomDto,
+  CurrentUser,
   DeleteMessagesDto,
   EditMessageDto,
   GetUsersStatusDto,

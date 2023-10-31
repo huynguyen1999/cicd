@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { ChatModule } from './chat.module';
+import { MessageModule } from './message.module';
 import { ConfigService } from '@nestjs/config';
 import {
   LoggingInterceptor,
-  ResponseInterceptor,
   MicroserviceFilter,
+  ResponseInterceptor,
 } from '@app/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(ChatModule);
+  const app = await NestFactory.create(MessageModule);
   const configService = app.get(ConfigService);
   const port = configService.get('PORT');
   app.useGlobalInterceptors(
