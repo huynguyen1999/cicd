@@ -73,6 +73,12 @@
       ],
       "k/sts-auth/*": [
         "libs/sts-auth/src/*"
+      ],
+      "@app/axios": [
+        "libs/axios/src"
+      ],
+      "@app/axios/*": [
+        "libs/axios/src/*"
       ]
     }
   }

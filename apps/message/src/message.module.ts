@@ -6,6 +6,7 @@ import { RabbitmqModule } from '@app/rabbitmq';
 import * as controllers from './controllers';
 import * as services from './services';
 import * as Joi from 'joi';
+import { AxiosModule } from '@app/axios';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import * as Joi from 'joi';
     }),
     DatabaseModule,
     RabbitmqModule,
+    AxiosModule,
   ],
   providers: [...Object.values(controllers), ...Object.values(services)],
 })

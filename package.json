@@ -121,7 +121,8 @@
       "^@app/constant(|/.*)$": "<rootDir>/libs/constant/src/$1",
       "^@app/jwt-auth(|/.*)$": "<rootDir>/libs/jwt-auth/src/$1",
       "^@app/sts-auth(|/.*)$": "<rootDir>/libs/sts-auth/src/$1",
-      "^k/sts-auth(|/.*)$": "<rootDir>/libs/sts-auth/src/$1"
+      "^k/sts-auth(|/.*)$": "<rootDir>/libs/sts-auth/src/$1",
+      "^@app/axios(|/.*)$": "<rootDir>/libs/axios/src/$1"
     }
   }
 }

@@ -1,11 +1,14 @@
 import { Controller } from '@nestjs/common';
-import { MessageAnalyzerService } from '../services';
+import { MessageAnalyzerService, MessageTranslationService } from '../services';
 import { RabbitPayload, RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import { MessagingDto, RpcRequest } from '@app/common';
 
 @Controller()
 export class MessageAnalyzerController {
-  constructor(private analyzerService: MessageAnalyzerService) {}
+  constructor(
+    private analyzerService: MessageAnalyzerService,
+    private translateService: MessageTranslationService,
+  ) {}
 
   @RabbitRPC({
     routingKey: 'message.analyzeToxicity',
@@ -14,8 +17,13 @@ export class MessageAnalyzerController {
   })
   async analyzeToxicity(@RabbitPayload() payload: RpcRequest<MessagingDto>) {
     const { data } = payload;
-    // TODO: Translate to english first then analyze
-    const toxicity = await this.analyzerService.analyze(data);
+    const translatedMessage = await this.translateService.translateTextToEnglish(
+      data.message,
+    );
+    const toxicity = await this.analyzerService.analyze({
+      ...data,
+      message: translatedMessage,
+    });
     return { is_toxic: toxicity > 2 };
   }
 }

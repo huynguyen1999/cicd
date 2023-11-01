@@ -98,6 +98,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/message/tsconfig.app.json"
       }
+    },
+    "axios": {
+      "type": "library",
+      "root": "libs/axios",
+      "entryFile": "index",
+      "sourceRoot": "libs/axios/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/axios/tsconfig.lib.json"
+      }
     }
   }
 }

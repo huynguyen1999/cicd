@@ -22,4 +22,11 @@ export class MessageTranslationService {
     });
     return { id: message._id, translation: translation.text };
   }
+
+  async translateTextToEnglish(text: string) {
+    const translation = await translate(text, {
+      to: 'en',
+    });
+    return translation.text;
+  }
 }

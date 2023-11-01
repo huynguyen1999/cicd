@@ -36,6 +36,17 @@ export class MessageHistory {
   time: Date;
 }
 
+@Schema()
+export class MessageToxicity {
+  @Prop({}) toxic: number;
+  @Prop({}) severe_toxic: number;
+  @Prop({}) obscene: number;
+  @Prop({}) threat: number;
+  @Prop({}) insult: number;
+  @Prop({}) identity_hate: number;
+  @Prop({ index: true }) total: number;
+}
+
 @Schema({ versionKey: false })
 export class Message extends AbstractDocument {
   @Prop({ required: true })
@@ -88,8 +99,12 @@ export class Message extends AbstractDocument {
 
   @Prop({ type: Date, index: true })
   deleted_at?: Date;
+
+  @Prop({ type: mongoose.Schema.Types.Mixed, default: {}, select: false })
+  toxicity?: MessageToxicity;
 }
 
 export type MessageDocument = HydratedDocument<Message>;
 export const MessageSchema = SchemaFactory.createForClass(Message);
 MessageSchema.plugin(require('mongoose-paginate-v2'));
+MessageSchema.index({ 'toxicity.total': 1 });

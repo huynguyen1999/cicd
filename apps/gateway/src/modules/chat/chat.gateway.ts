@@ -173,7 +173,7 @@ export class ChatGateway
       messages: [result.data],
     });
     const analyzeResult = await this.rmqService.request(
-      { data: body, user },
+      { data: { ...body, message_id: result.data._id }, user },
       'message.analyzeToxicity',
     );
     if (analyzeResult.data.is_toxic) {
