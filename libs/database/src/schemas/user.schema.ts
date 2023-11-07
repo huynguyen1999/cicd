@@ -43,7 +43,7 @@ export class User extends AbstractDocument {
   blocked_users?: string[];
 
   @Prop({ type: Object, default: {}, select: false })
-  settings?: object;
+  settings?: any;
 
   @Prop({
     default: UserRole.User,

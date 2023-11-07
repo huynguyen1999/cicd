@@ -107,6 +107,15 @@
       "compilerOptions": {
         "tsConfigPath": "libs/axios/tsconfig.lib.json"
       }
+    },
+    "ai": {
+      "type": "application",
+      "root": "apps/ai",
+      "entryFile": "main",
+      "sourceRoot": "apps/ai/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/ai/tsconfig.app.json"
+      }
     }
   }
 }

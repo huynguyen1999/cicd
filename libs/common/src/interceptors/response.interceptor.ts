@@ -19,6 +19,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, Response<T>> {
         'undefined';
 
     if (haveResponse) {
+      // TODO: Sign response signature for more security in the response
       return next.handle().pipe(map((data) => ({ success: true, data })));
     } else {
       return next.handle();

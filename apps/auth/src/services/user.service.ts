@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   UnauthorizedException,
   UnprocessableEntityException,
@@ -12,8 +13,10 @@ import {
   UpdateUserStatusDto,
   USER_DATA,
   GetUsersStatusDto,
+  UpdateUserProfileDto,
 } from '@app/common';
 import * as bcryptjs from 'bcryptjs';
+import * as FileSystem from 'fs';
 import { SessionService } from './session.service';
 import { RedisService } from '@app/redis';
 
@@ -134,5 +137,20 @@ export class UserService {
     return users
       .filter((user) => user !== null)
       .map((user) => ({ _id: user._id, status: user.status }));
+  }
+
+  async updateUserProfile(data: UpdateUserProfileDto, user: User) {
+    if (data.profile_picture && !FileSystem.existsSync(data.profile_picture)) {
+      throw new BadRequestException('Profile picture does not exist.');
+    }
+
+    const updatedUser = await this.userRepository.findOneAndUpdate(
+      { _id: user._id },
+      data,
+    );
+    if (!updatedUser) {
+      throw new BadRequestException('User not found.');
+    }
+    return updatedUser;
   }
 }

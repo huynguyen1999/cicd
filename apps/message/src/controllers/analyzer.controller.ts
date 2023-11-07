@@ -16,14 +16,16 @@ export class MessageAnalyzerController {
     queue: 'message.analyzeToxicity',
   })
   async analyzeToxicity(@RabbitPayload() payload: RpcRequest<MessagingDto>) {
-    const { data } = payload;
-    const translatedMessage = await this.translateService.translateTextToEnglish(
-      data.message,
+    const { data, user } = payload;
+    const translatedMessage =
+      await this.translateService.translateTextToEnglish(data.message);
+    const toxicity = await this.analyzerService.analyze(
+      {
+        ...data,
+        message: translatedMessage,
+      },
+      user,
     );
-    const toxicity = await this.analyzerService.analyze({
-      ...data,
-      message: translatedMessage,
-    });
     return { is_toxic: toxicity > 2 };
   }
 }

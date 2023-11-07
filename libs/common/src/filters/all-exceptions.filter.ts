@@ -9,6 +9,7 @@ import {
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost): any {
+    console.log(exception);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest<Request>();
@@ -17,7 +18,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    response.status(httpStatus).json({
+    return response.status(httpStatus).json({
       success: false,
       statusCode: httpStatus,
       timestamp: new Date().toISOString(),

@@ -6,6 +6,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import * as modules from './modules';
 import { RedisModule } from '@app/redis';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { DatabaseModule } from '@app/database';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
       }),
       inject: [ConfigService],
     }),
+    DatabaseModule,
     RabbitmqModule,
     AuthModule,
     ...Object.values(modules),

@@ -4,6 +4,7 @@ import { RabbitPayload, RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import {
   GetUsersStatusDto,
   RpcRequest,
+  UpdateUserProfileDto,
   UpdateUserStatusDto,
 } from '@app/common';
 import { UserService } from '../services';
@@ -42,5 +43,17 @@ export class UserController {
     @RabbitPayload() payload: RpcRequest<GetUsersStatusDto>,
   ) {
     return await this.userService.getUsersStatus(payload.data, payload.user);
+  }
+
+  @RabbitRPC({
+    routingKey: 'user.updateProfile',
+    exchange: 'exchange',
+    queue: 'user.updateProfile',
+  })
+  async updateUserProfile(
+    @RabbitPayload() payload: RpcRequest<UpdateUserProfileDto>,
+  ) {
+    const { data, user } = payload;
+    return await this.userService.updateUserProfile(data, user);
   }
 }

@@ -14,7 +14,6 @@ import { AxiosModule } from '@app/axios';
       isGlobal: true,
       validationSchema: Joi.object({
         PORT: Joi.number().required(),
-        MODEL_PORT: Joi.number().required(),
         SERVICE_NAME: Joi.string().required(),
         MONGODB_URI: Joi.string().required(),
         RABBITMQ_URI: Joi.string().required(),

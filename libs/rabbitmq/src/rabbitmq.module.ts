@@ -1,7 +1,11 @@
 import { Global, Module } from '@nestjs/common';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import {
+  MessageHandlerErrorBehavior,
+  RabbitMQModule,
+} from '@golevelup/nestjs-rabbitmq';
 import { ConfigService } from '@nestjs/config';
 import { RabbitmqService } from './rabbitmq.service';
+import { RPC_TIMEOUT_MS } from './rabbitmq.constant';
 
 @Global()
 @Module({
@@ -16,6 +20,9 @@ import { RabbitmqService } from './rabbitmq.service';
         ],
         uri: configService.get('RABBITMQ_URI'),
         enableControllerDiscovery: true,
+        connectionManagerOptions: {
+          heartbeatIntervalInSeconds: 5,
+        },
       }),
       inject: [ConfigService],
     }),

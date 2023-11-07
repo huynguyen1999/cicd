@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, UploadedFile } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigService } from '@nestjs/config';
 import * as repositories from './repositories';
@@ -11,6 +11,7 @@ import {
   RoomSchema,
   Session,
   SessionSchema,
+  UploadedFileSchema,
   User,
   UserSchema,
 } from './schemas';
@@ -30,6 +31,7 @@ import {
       { name: Message.name, schema: MessageSchema },
       { name: Session.name, schema: SessionSchema },
       { name: RefreshToken.name, schema: RefreshTokenSchema },
+      { name: UploadedFile.name, schema: UploadedFileSchema },
     ]),
   ],
   providers: [...Object.values(repositories)],

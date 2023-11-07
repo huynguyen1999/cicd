@@ -1,42 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { MessagingDto } from '@app/common';
-import { AxiosService } from '@app/axios';
-import * as axios from 'axios';
-import { ConfigService } from '@nestjs/config';
-import { MessageRepository } from '@app/database';
+import { MessageRepository, User } from '@app/database';
+import { RabbitmqService } from '@app/rabbitmq';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class MessageAnalyzerService {
   constructor(
-    private readonly axiosService: AxiosService,
-    private readonly configService: ConfigService,
+    private readonly rmqService: RabbitmqService,
     private readonly messageRepository: MessageRepository,
   ) {}
 
-  async analyze(data: MessagingDto) {
-    const url =
-      'http://localhost:' + this.configService.get<string>('MODEL_PORT');
-    const result = await this.axiosService.request(url, 'POST', {
-      text: data.message,
-    });
-    if (!result?.data) return;
-
-    let totalToxicity = 0;
-    for (const key in result.data) {
-      const floatValue = +result.data[key].toFixed(3);
-      result.data[key] = floatValue;
-      totalToxicity += floatValue;
+  async analyze(data: MessagingDto, user: User) {
+    const result = await this.rmqService.request(
+      { data, user },
+      'ai.toxicityAnalyzer',
+    );
+    if (!result.success) {
+      throw new RpcException('Error analyzing toxicity');
     }
-    
     await this.messageRepository.findOneAndUpdate(
       { _id: data.message_id },
       {
         toxicity: {
           ...result.data,
-          total: totalToxicity,
+          total: result.data,
         },
       },
     );
-    return totalToxicity as number;
+    return result.data as number;
   }
 }

@@ -13,14 +13,18 @@ import { RedisService } from '@app/redis';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AllExceptionsFilter } from '@app/common';
 import * as cookieParser from 'cookie-parser';
-import * as os from 'os';
 import * as nodeCluster from 'cluster';
+import * as os from 'os';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(GatewayModule, {
     cors: true,
   });
   app.use(cookieParser());
+  app.useStaticAssets(join(__dirname, '../../../public'), {
+    prefix: '/public',
+  });
   app.useBodyParser('json', { limit: '10mb' });
   app.useGlobalPipes(
     new ValidationPipe({
@@ -48,7 +52,7 @@ async function bootstrap() {
     new ResponseInterceptor(),
   );
   app.useGlobalFilters(new AllExceptionsFilter());
-  await app.listen(port, () => {
+  app.listen(port, () => {
     console.log(
       `API Gateway service is running on port ${port}, in process ${process.pid}`,
     );

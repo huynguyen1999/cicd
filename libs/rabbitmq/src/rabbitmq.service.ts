@@ -41,19 +41,23 @@ export class RabbitmqService implements OnModuleInit {
     timeout = RPC_TIMEOUT_MS,
     exchange = 'exchange',
   ): Promise<any> {
-    data.service = this.configService.get('SERVICE_NAME');
-    data.timestamp = Date.now();
-    const signature = generateSignature(this.key, data);
-    const response = await this.amqpConnection.request({
-      exchange,
-      routingKey,
-      payload: {
-        ...data,
-        signature,
-      },
-      timeout,
-    });
-
-    return response;
+    try {
+      data.service = this.configService.get('SERVICE_NAME');
+      data.timestamp = Date.now();
+      const signature = generateSignature(this.key, data);
+      const response = await this.amqpConnection.request({
+        exchange,
+        routingKey,
+        payload: {
+          ...data,
+          signature,
+        },
+        timeout,
+      });
+      // TODO: Should verify response signature for more security
+      return response;
+    } catch (exception) {
+      return { success: false, error: exception };
+    }
   }
 }

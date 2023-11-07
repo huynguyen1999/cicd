@@ -105,4 +105,18 @@ export class AuthController {
     );
     return res.send(result);
   }
+
+  @UseGuards(SessionGuard)
+  @Put('updateProfile')
+  async updateUserProfile(
+    @Body() body: ChangePasswordDto,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    const result: any = await this.rmqService.request(
+      { data: body, user },
+      'user.updateProfile',
+    );
+    return res.send(result);
+  }
 }
