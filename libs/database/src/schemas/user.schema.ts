@@ -2,6 +2,16 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AbstractDocument } from '../abstract.schema';
 import mongoose, { HydratedDocument } from 'mongoose';
 import { UserRole, UserStatus } from '../../../common/src';
+
+@Schema()
+export class UserFaceFeatures {
+  @Prop({ type: String })
+  path: string;
+
+  @Prop({ type: [Number] })
+  values: number[];
+}
+
 @Schema({ versionKey: false })
 export class User extends AbstractDocument {
   @Prop({ required: true, unique: true, index: true })
@@ -74,6 +84,12 @@ export class User extends AbstractDocument {
     default: null,
   })
   created_by?: User;
+
+  @Prop({
+    type: mongoose.Schema.Types.Mixed,
+    select: false,
+  })
+  face_features?: UserFaceFeatures;
 
   session?: string;
 }

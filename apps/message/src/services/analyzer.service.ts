@@ -11,6 +11,16 @@ export class MessageAnalyzerService {
     private readonly messageRepository: MessageRepository,
   ) {}
 
+  private sumToxicity(toxicityAnalysis: Record<string, any>) {
+    let totalToxicity = 0;
+    for (const key in toxicityAnalysis) {
+      const floatValue = +toxicityAnalysis[key];
+      toxicityAnalysis[key] = floatValue;
+      totalToxicity += floatValue;
+    }
+    return totalToxicity;
+  }
+
   async analyze(data: MessagingDto, user: User) {
     const result = await this.rmqService.request(
       { data, user },
@@ -19,15 +29,17 @@ export class MessageAnalyzerService {
     if (!result.success) {
       throw new RpcException('Error analyzing toxicity');
     }
+
+    const totalToxicity = this.sumToxicity(result.data);
     await this.messageRepository.findOneAndUpdate(
       { _id: data.message_id },
       {
         toxicity: {
           ...result.data,
-          total: result.data,
+          total: totalToxicity,
         },
       },
     );
-    return result.data as number;
+    return totalToxicity as number;
   }
 }

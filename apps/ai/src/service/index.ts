@@ -1,3 +1,3 @@
-export * from './deep-face.service';
+export * from './face-recognition.service';
 export * from './nsfw-classifier.service';
 export * from './toxicity.service';

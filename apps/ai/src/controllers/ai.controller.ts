@@ -4,14 +4,24 @@ import {
   RabbitSubscribe,
 } from '@golevelup/nestjs-rabbitmq';
 import { Controller } from '@nestjs/common';
-import { NSFWClassifierService, ToxicityService } from '../service';
-import { MessagingDto, RpcRequest } from '@app/common';
+import {
+  FaceRecognitionService,
+  NSFWClassifierService,
+  ToxicityService,
+} from '../service';
+import {
+  AnalyzeFileWithAiDto,
+  BuildFaceClassifierDto,
+  MessagingDto,
+  RpcRequest,
+} from '@app/common';
 
 @Controller()
 export class AiController {
   constructor(
     private readonly toxicityService: ToxicityService,
     private readonly nsfwClassifierService: NSFWClassifierService,
+    private readonly faceRecognitionService: FaceRecognitionService,
   ) {}
 
   @RabbitRPC({
@@ -29,14 +39,55 @@ export class AiController {
     exchange: 'exchange',
     queue: 'ai.nsfwClassifier',
   })
-  async classifyNSFW(@RabbitPayload() payload: RpcRequest<{ path: string }>) {
+  async classifyNSFW(
+    @RabbitPayload() payload: RpcRequest<AnalyzeFileWithAiDto>,
+  ) {
     await this.nsfwClassifierService.checkNSFW(payload.data.path);
   }
 
   @RabbitRPC({
-    routingKey: 'ai.faceRecognition',
+    routingKey: 'ai.extractFaceFeatures',
     exchange: 'exchange',
-    queue: 'ai.faceRecognition',
+    queue: 'ai.extractFaceFeatures',
   })
-  async recognizeFace() {}
+  async extractFaceFeatures(
+    @RabbitPayload() payload: RpcRequest<AnalyzeFileWithAiDto>,
+  ) {
+    const { data, user } = payload;
+    const features = await this.faceRecognitionService.extractFaceFeatures(
+      data.file_name,
+      user,
+    );
+    return features;
+  }
+
+  @RabbitRPC({
+    routingKey: 'ai.recognizeFaces',
+    exchange: 'exchange',
+    queue: 'ai.recognizeFaces',
+  })
+  async recognizeFaces(
+    @RabbitPayload() payload: RpcRequest<AnalyzeFileWithAiDto>,
+  ) {
+    const { data, user } = payload;
+    const result = await this.faceRecognitionService.recognizeFaces(
+      data.file_name,
+      user,
+    );
+    console.log('result from recognizeFaces', result);
+
+    return result;
+  }
+
+  @RabbitRPC({
+    routingKey: 'ai.buildFaceClassifier',
+    exchange: 'exchange',
+    queue: 'ai.buildFaceClassifier',
+  })
+  async buildFaceClassifier(@RabbitPayload() payload: RpcRequest<any>) {
+    const { user } = payload;
+    const result = await this.faceRecognitionService.buildFaceClassifier(user);
+
+    return result;
+  }
 }

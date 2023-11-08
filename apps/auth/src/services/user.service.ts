@@ -4,7 +4,12 @@ import {
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { User, UserDocument, UserRepository } from '@app/database';
+import {
+  UploadedFileRepository,
+  User,
+  UserDocument,
+  UserRepository,
+} from '@app/database';
 import {
   SALT_ROUNDS,
   ChangePasswordDto,
@@ -26,6 +31,7 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly sessionService: SessionService,
     private readonly redisService: RedisService,
+    private readonly uploadedFileRepository: UploadedFileRepository,
   ) {}
 
   async createUser(data: RegisterDto) {
@@ -139,14 +145,23 @@ export class UserService {
       .map((user) => ({ _id: user._id, status: user.status }));
   }
 
-  async updateUserProfile(data: UpdateUserProfileDto, user: User) {
-    if (data.profile_picture && !FileSystem.existsSync(data.profile_picture)) {
-      throw new BadRequestException('Profile picture does not exist.');
+  private async validateProfilePicture(fileName: string) {
+    const uploadedFile = await this.uploadedFileRepository.findOne({
+      name: fileName,
+    });
+    if (!uploadedFile) {
+      throw new BadRequestException('File not found in database.');
     }
-
+    if (!FileSystem.existsSync(uploadedFile.path)) {
+      throw new BadRequestException('File not found in storage.');
+    }
+    return uploadedFile;
+  }
+  async updateUserProfile(data: UpdateUserProfileDto, user: User) {
+    const uploadedFile = await this.validateProfilePicture(data.file_name);
     const updatedUser = await this.userRepository.findOneAndUpdate(
       { _id: user._id },
-      data,
+      { ...data, profile_picture: uploadedFile.path },
     );
     if (!updatedUser) {
       throw new BadRequestException('User not found.');

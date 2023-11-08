@@ -18,6 +18,7 @@ import {
   RegisterDto,
   SESSION_COOKIE_NAME,
   UntrackUserActivity,
+  UpdateUserProfileDto,
 } from '@app/common';
 import { ChatGateway } from '../chat/chat.gateway';
 import { SessionGuard } from '../../guards';
@@ -109,13 +110,43 @@ export class AuthController {
   @UseGuards(SessionGuard)
   @Put('updateProfile')
   async updateUserProfile(
-    @Body() body: ChangePasswordDto,
+    @Body() body: UpdateUserProfileDto,
     @CurrentUser() user: User,
     @Res() res: Response,
   ) {
     const result: any = await this.rmqService.request(
       { data: body, user },
       'user.updateProfile',
+    );
+    if (result.success && body.used_as_identifier) {
+      this.rmqService.publish(
+        { data: { file_name: body.file_name }, user },
+        'ai.extractFaceFeatures',
+      );
+    }
+    return res.send(result);
+  }
+
+  @UseGuards(SessionGuard)
+  @Post('recognizeFaces')
+  async recognizeFaces(
+    @Body() body: UpdateUserProfileDto,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    const result: any = await this.rmqService.request(
+      { data: { file_name: body.file_name }, user },
+      'ai.recognizeFaces',
+    );
+    return res.send(result);
+  }
+
+  @UseGuards(SessionGuard)
+  @Post('buildFaceClassifier')
+  async buildFaceClassifier(@CurrentUser() user: User, @Res() res: Response) {
+    const result: any = await this.rmqService.request(
+      { user, data: {} },
+      'ai.buildFaceClassifier',
     );
     return res.send(result);
   }

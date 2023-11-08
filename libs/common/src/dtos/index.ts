@@ -17,3 +17,4 @@ export * from './sessions';
 export * from './user';
 export * from './message';
 export * from './upload';
+export * from './ai';

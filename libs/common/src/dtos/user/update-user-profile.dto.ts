@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateUserProfileDto {
@@ -15,10 +16,14 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  profile_picture?: string;
+  bio?: string;
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  bio?: string;
+  file_name?: string;
+
+  @ValidateIf((o) => typeof o.profile_picture !== 'undefined')
+  @IsBoolean()
+  used_as_identifier?: boolean;
 }
