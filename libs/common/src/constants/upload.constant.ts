@@ -3,6 +3,7 @@ import { FileExtension, UploadConfig } from '../interfaces';
 export enum UploadType {
   Avatar = 'avatar',
   MessageMedia = 'message-media',
+  Other = 'other',
 }
 
 export const FILE_EXTENSIONS: Record<string, FileExtension> = {
@@ -72,6 +73,22 @@ export const TYPE_UPLOAD_CONFIGS: Record<string, UploadConfig> = {
   },
   [UploadType.MessageMedia]: {
     max_size_in_bytes: 1024 * 1024 * 50, // 50MB
+    whitelist: [],
+    blacklist: [
+      FILE_EXTENSIONS.EXE,
+      FILE_EXTENSIONS.ISO,
+      FILE_EXTENSIONS.BZ,
+      FILE_EXTENSIONS.BZ2,
+      FILE_EXTENSIONS.RAR,
+      FILE_EXTENSIONS.SEVEN_ZIP,
+      FILE_EXTENSIONS.ZIP,
+      FILE_EXTENSIONS.XZ,
+      FILE_EXTENSIONS.GZ,
+      FILE_EXTENSIONS.Z,
+    ],
+  },
+  [UploadType.Other]: {
+    max_size_in_bytes: 1024 * 1024 * 50,
     whitelist: [],
     blacklist: [
       FILE_EXTENSIONS.EXE,

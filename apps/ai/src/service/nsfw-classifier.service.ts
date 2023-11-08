@@ -1,11 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
-import * as nsfw from 'nsfwjs';
 import { fromBuffer } from 'file-type';
-import * as tf from '@tensorflow/tfjs-node';
 import { UploadedFileRepository } from '@app/database';
 import { NSFWClassName, NSFW_THRESHOLD, UploadedFileStatus } from '@app/common';
-
+import * as nsfw from 'nsfwjs';
+import * as tf from '@tensorflow/tfjs-node';
+import * as FileSystem from 'fs';
 @Injectable()
 export class NSFWClassifierService implements OnModuleInit {
   constructor(
@@ -16,8 +16,17 @@ export class NSFWClassifierService implements OnModuleInit {
     this.nsfwModel = await nsfw.load();
   }
 
-  async checkNSFW(filePath: string) {
-    const fileBuffer = await fsPromises.readFile(filePath);
+  async checkNSFW(fileName: string) {
+    const file = await this.uploadedFileRepository.findOne({
+      name: fileName,
+      is_deleted: false,
+      status: UploadedFileStatus.Active,
+    });
+    if (!file || !FileSystem.existsSync(file.path)) {
+      throw new Error('File not found');
+    }
+
+    const fileBuffer = await fsPromises.readFile(file.path);
     const { mime } = await fromBuffer(fileBuffer);
     // only check for image
     if (mime.split('/')[0] !== 'image') {
@@ -57,7 +66,7 @@ export class NSFWClassifierService implements OnModuleInit {
       };
     }
     await this.uploadedFileRepository.findOneAndUpdate(
-      { path: filePath },
+      { name: file.name },
       updateData,
     );
 

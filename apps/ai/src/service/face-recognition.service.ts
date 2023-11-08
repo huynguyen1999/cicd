@@ -3,6 +3,7 @@ import { AxiosService } from '@app/axios';
 import { ConfigService } from '@nestjs/config';
 import { UploadedFileRepository, User, UserRepository } from '@app/database';
 import { compare } from 'bcryptjs';
+import { UploadType, UploadedFileStatus } from '@app/common';
 
 @Injectable()
 export class FaceRecognitionService {
@@ -19,6 +20,9 @@ export class FaceRecognitionService {
   private async getFilePath(fileName: string) {
     const uploadedFile = await this.uploadedFileRepository.findOne({
       name: fileName,
+      is_deleted: false,
+      status: UploadedFileStatus.Active,
+      upload_type: UploadType.Avatar,
     });
     if (!uploadedFile) {
       throw new Error('File not found');

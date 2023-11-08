@@ -13,4 +13,9 @@ export class MessagingDto {
   @IsString()
   @IsNotEmpty()
   room_id: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  file_name?: string; // for attachment
 }

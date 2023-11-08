@@ -42,7 +42,7 @@ export class AiController {
   async classifyNSFW(
     @RabbitPayload() payload: RpcRequest<AnalyzeFileWithAiDto>,
   ) {
-    await this.nsfwClassifierService.checkNSFW(payload.data.path);
+    await this.nsfwClassifierService.checkNSFW(payload.data.file_name);
   }
 
   @RabbitRPC({
@@ -74,8 +74,6 @@ export class AiController {
       data.file_name,
       user,
     );
-    console.log('result from recognizeFaces', result);
-
     return result;
   }
 

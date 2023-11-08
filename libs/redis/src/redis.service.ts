@@ -54,7 +54,6 @@ export class RedisService {
   }
 
   async set(key: string, value: any, options?: SetOptions) {
-    // console.log(`setting ${key} with options ${JSON.stringify(options)} with value ${JSON.stringify(value)}`);
     return await this.client.set(key, JSON.stringify(value), options);
   }
 

@@ -62,6 +62,7 @@ export class AuthProcessor implements OnModuleInit {
       );
       if (!session) {
         console.log('Session not found');
+        return;
       }
       await this.userRepository.findOneAndUpdate(
         { _id: session.user },

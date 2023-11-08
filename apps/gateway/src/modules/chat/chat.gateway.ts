@@ -176,7 +176,6 @@ export class ChatGateway
       { data: { ...body, message_id: result.data._id }, user },
       'message.analyzeToxicity',
     );
-    console.log('analyze result: ', analyzeResult);
     if (analyzeResult.data.is_toxic) {
       this.server.to(body.room_id).emit('roomToxicMessages', {
         messages: [{ _id: result.data._id }],

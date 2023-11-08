@@ -58,7 +58,6 @@ export class User extends AbstractDocument {
   @Prop({
     default: UserRole.User,
     enum: Object.values(UserRole),
-    select: false,
   })
   role?: string;
 

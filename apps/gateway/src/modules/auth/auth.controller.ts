@@ -19,9 +19,11 @@ import {
   SESSION_COOKIE_NAME,
   UntrackUserActivity,
   UpdateUserProfileDto,
+  UserRole,
 } from '@app/common';
 import { ChatGateway } from '../chat/chat.gateway';
-import { SessionGuard } from '../../guards';
+import { RoleGuard, SessionGuard } from '../../guards';
+import { Roles } from '../../../../../libs/common/src/decorators/role.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -127,7 +129,8 @@ export class AuthController {
     return res.send(result);
   }
 
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, RoleGuard)
+  @Roles(UserRole.Admin)
   @Post('recognizeFaces')
   async recognizeFaces(
     @Body() body: UpdateUserProfileDto,
@@ -141,7 +144,8 @@ export class AuthController {
     return res.send(result);
   }
 
-  @UseGuards(SessionGuard)
+  @UseGuards(SessionGuard, RoleGuard)
+  @Roles(UserRole.Admin)
   @Post('buildFaceClassifier')
   async buildFaceClassifier(@CurrentUser() user: User, @Res() res: Response) {
     const result: any = await this.rmqService.request(

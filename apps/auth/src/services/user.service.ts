@@ -19,6 +19,8 @@ import {
   USER_DATA,
   GetUsersStatusDto,
   UpdateUserProfileDto,
+  UploadedFileStatus,
+  UploadType,
 } from '@app/common';
 import * as bcryptjs from 'bcryptjs';
 import * as FileSystem from 'fs';
@@ -136,7 +138,6 @@ export class UserService {
     const userDataKeys: string[] = data.user_ids.map((userId) =>
       USER_DATA(userId),
     );
-    console.log(userDataKeys);
     const users: Partial<User>[] = await this.redisService.getMultiple(
       userDataKeys,
     );
@@ -148,6 +149,9 @@ export class UserService {
   private async validateProfilePicture(fileName: string) {
     const uploadedFile = await this.uploadedFileRepository.findOne({
       name: fileName,
+      is_deleted: false,
+      status: UploadedFileStatus.Active,
+      upload_type: UploadType.Avatar,
     });
     if (!uploadedFile) {
       throw new BadRequestException('File not found in database.');

@@ -46,6 +46,7 @@ export class UploadService implements OnModuleInit {
         original_name: file.originalname,
         name: randomFileName,
         path,
+        upload_type: data.type,
         size: file.size,
         status: UploadedFileStatus.Active,
         created_by: user._id,
@@ -55,7 +56,10 @@ export class UploadService implements OnModuleInit {
         path,
         name: randomFileName,
       });
-      this.rmqService.publish({ data: { path }, user }, 'ai.nsfwClassifier');
+      this.rmqService.publish(
+        { data: { file_name: uploadedFileDoc.name }, user },
+        'ai.nsfwClassifier',
+      );
     }
     return { data: paths };
   }

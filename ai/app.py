@@ -18,7 +18,6 @@ def analyze_toxicity():
 
 @app.route("/extractFaceFeatures", methods=["POST"])
 def extract_face_features():
-    print(request.json)
     path = request.json["path"]
     result = face_recognizer.extract_face_features(path)
     return Response(json.dumps({"data": result}), mimetype="application/json")

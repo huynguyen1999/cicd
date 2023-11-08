@@ -6,18 +6,31 @@ import {
   MessagingDto,
   ReactMessageDto,
   SeenMessagesDto,
+  UploadType,
+  UploadedFileStatus,
 } from '@app/common';
-import { MessageDocument, MessageRepository, User } from '@app/database';
+import {
+  Message,
+  MessageDocument,
+  MessageRepository,
+  UploadedFileRepository,
+  User,
+} from '@app/database';
 import { Types } from 'mongoose';
-import * as DayJS from 'dayjs';
 import { RpcException } from '@nestjs/microservices';
-
+import * as DayJS from 'dayjs';
+import * as FileSystem from 'fs';
 @Injectable()
 export class ChatService {
-  constructor(private readonly messageRepository: MessageRepository) {}
+  constructor(
+    private readonly messageRepository: MessageRepository,
+    private readonly uploadedFileRepository: UploadedFileRepository,
+  ) {}
+
   async handleNewMessage(data: MessagingDto, user: User) {
-    const { room_id, message } = data;
-    return await this.messageRepository.create({
+    const { room_id, message, file_name } = data;
+
+    const messageData: any = {
       room: new Types.ObjectId(room_id),
       sender: new Types.ObjectId(user._id),
       content: message,
@@ -27,7 +40,21 @@ export class ChatService {
           time: new Date(),
         },
       ],
-    } as MessageDocument);
+    };
+
+    if (file_name) {
+      const file = await this.uploadedFileRepository.findOne({
+        name: file_name,
+        is_deleted: false,
+        status: UploadedFileStatus.Active,
+        upload_type: UploadType.MessageMedia,
+      });
+      if (!file || !FileSystem.existsSync(file.path)) {
+        throw new RpcException(`File not found`);
+      }
+      messageData.attachment = file.path;
+    }
+    return await this.messageRepository.create(messageData as MessageDocument);
   }
   async handleNotice(data: MessagingDto) {
     const { room_id, message } = data;

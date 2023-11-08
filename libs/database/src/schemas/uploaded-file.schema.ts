@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AbstractDocument } from '../abstract.schema';
 import mongoose, { HydratedDocument } from 'mongoose';
-import { UploadedFileStatus } from '../../../common/src';
+import { UploadType, UploadedFileStatus } from '@app/common';
 
 @Schema({ versionKey: false, collection: 'uploaded_files' })
 export class UploadedFile extends AbstractDocument {
@@ -22,6 +22,9 @@ export class UploadedFile extends AbstractDocument {
 
   @Prop({ type: Date, default: Date.now, index: true })
   created_at?: Date;
+
+  @Prop({ type: String, enum: UploadType })
+  upload_type: UploadType;
 
   @Prop({
     type: String,
