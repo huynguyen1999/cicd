@@ -3,3 +3,4 @@ export * from './chat/chat.module';
 export * from './room/room.module';
 export * from './message/message.module';
 export * from './upload/upload.module';
+export * from './notification/notification.module';

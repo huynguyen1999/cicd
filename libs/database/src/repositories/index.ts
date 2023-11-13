@@ -4,3 +4,4 @@ export * from './message.repository';
 export * from './session.repository';
 export * from './refresh-token.repository';
 export * from './uploaded-file.repository';
+export * from './notification.repository';

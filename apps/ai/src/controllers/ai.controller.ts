@@ -6,12 +6,14 @@ import {
 import { Controller } from '@nestjs/common';
 import {
   FaceRecognitionService,
+  FaceSwapService,
   NSFWClassifierService,
   ToxicityService,
 } from '../service';
 import {
   AnalyzeFileWithAiDto,
   BuildFaceClassifierDto,
+  FaceSwapDto,
   MessagingDto,
   RpcRequest,
 } from '@app/common';
@@ -22,6 +24,7 @@ export class AiController {
     private readonly toxicityService: ToxicityService,
     private readonly nsfwClassifierService: NSFWClassifierService,
     private readonly faceRecognitionService: FaceRecognitionService,
+    private readonly faceSwapService: FaceSwapService,
   ) {}
 
   @RabbitRPC({
@@ -42,7 +45,10 @@ export class AiController {
   async classifyNSFW(
     @RabbitPayload() payload: RpcRequest<AnalyzeFileWithAiDto>,
   ) {
-    await this.nsfwClassifierService.checkNSFW(payload.data.file_name);
+    await this.nsfwClassifierService.checkNSFW(
+      payload.data.file_name,
+      payload.user,
+    );
   }
 
   @RabbitRPC({
@@ -85,7 +91,16 @@ export class AiController {
   async buildFaceClassifier(@RabbitPayload() payload: RpcRequest<any>) {
     const { user } = payload;
     const result = await this.faceRecognitionService.buildFaceClassifier(user);
+    return result;
+  }
 
+  @RabbitRPC({
+    routingKey: 'ai.faceSwap',
+    exchange: 'exchange',
+    queue: 'ai.faceSwap',
+  })
+  async faceSwap(@RabbitPayload() payload: RpcRequest<FaceSwapDto>) {
+    const result = this.faceSwapService.execute(payload.data);
     return result;
   }
 }

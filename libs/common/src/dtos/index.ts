@@ -18,3 +18,4 @@ export * from './user';
 export * from './message';
 export * from './upload';
 export * from './ai';
+export * from './notification';

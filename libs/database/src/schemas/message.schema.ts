@@ -38,12 +38,12 @@ export class MessageHistory {
 
 @Schema()
 export class MessageToxicity {
-  @Prop({}) toxic: number;
-  @Prop({}) severe_toxic: number;
-  @Prop({}) obscene: number;
-  @Prop({}) threat: number;
-  @Prop({}) insult: number;
-  @Prop({}) identity_hate: number;
+  @Prop({ type: Number }) toxic: number;
+  @Prop({ type: Number }) severe_toxic: number;
+  @Prop({ type: Number }) obscene: number;
+  @Prop({ type: Number }) threat: number;
+  @Prop({ type: Number }) insult: number;
+  @Prop({ type: Number }) identity_hate: number;
   @Prop({ index: true }) total: number;
 }
 

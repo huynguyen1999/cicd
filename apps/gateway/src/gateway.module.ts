@@ -7,6 +7,7 @@ import * as modules from './modules';
 import { RedisModule } from '@app/redis';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from '@app/database';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { DatabaseModule } from '@app/database';
       }),
       inject: [ConfigService],
     }),
+    EventEmitterModule.forRoot({ global: true }),
     DatabaseModule,
     RabbitmqModule,
     AuthModule,

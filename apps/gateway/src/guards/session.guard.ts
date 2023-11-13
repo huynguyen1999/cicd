@@ -5,11 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { RedisService } from '@app/redis';
-import {
-  USER_ACTIVITY_INTERVAL_MS,
-  USER_DATA,
-  USER_SESSIONS,
-} from '@app/common';
+import { USER_DATA, USER_SESSIONS } from '@app/common';
 import { RabbitmqService } from '@app/rabbitmq';
 import { User } from '@app/database';
 

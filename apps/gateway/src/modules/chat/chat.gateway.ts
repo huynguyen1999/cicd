@@ -10,7 +10,12 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { RoomGuard, SessionGuard, WsThrottlerGuard } from '../../guards';
+import {
+  RoomGuard,
+  SessionGuard,
+  WsRoomGuard,
+  WsThrottlerGuard,
+} from '../../guards';
 import { User } from '@app/database';
 import { RedisService } from '@app/redis';
 import { Adapter } from 'socket.io-adapter';
@@ -62,6 +67,7 @@ export class ChatGateway
     this.adapter.on('logout', (data: { user_id: string }) =>
       this.handleLogoutEvent(data),
     );
+    console.log('after init');
 
     this.redisService.deleteMultipleKeys(`${USER_CONNECTED_ROOMS('')}*`);
     this.redisService.deleteMultipleKeys(`${USER_CONNECTED_SOCKETS('')}*`);
@@ -158,6 +164,7 @@ export class ChatGateway
     client.to(body.room_id).emit('roomTypingMessage', { user });
   }
 
+  @UseGuards(WsRoomGuard)
   @SubscribeMessage('message')
   async onNewMessage(
     @CurrentUser() user: User,

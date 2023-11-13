@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -14,6 +15,7 @@ import { User } from '@app/database';
 import {
   ChangePasswordDto,
   CurrentUser,
+  FaceSwapDto,
   LoginDto,
   RegisterDto,
   SESSION_COOKIE_NAME,
@@ -65,7 +67,7 @@ export class AuthController {
         maxAge: duration,
       });
     }
-    return res.send(result);
+    return res.status(200).send(result);
   }
 
   @UntrackUserActivity()
@@ -82,7 +84,7 @@ export class AuthController {
     );
     res.cookie(SESSION_COOKIE_NAME, '', { httpOnly: true, maxAge: 0 });
     this.chatGateway.adapter.emit('logout', { user_id: user._id });
-    return res.send(result);
+    return res.status(200).send(result);
   }
 
   @UseGuards(SessionGuard)
@@ -92,7 +94,7 @@ export class AuthController {
       { user },
       'user.getProfile',
     );
-    return res.send(profile);
+    return res.status(200).send(profile);
   }
 
   @UseGuards(SessionGuard)
@@ -106,7 +108,7 @@ export class AuthController {
       { data: body, user },
       'auth.changePassword',
     );
-    return res.send(result);
+    return res.status(200).send(result);
   }
 
   @UseGuards(SessionGuard)
@@ -126,7 +128,7 @@ export class AuthController {
         'ai.extractFaceFeatures',
       );
     }
-    return res.send(result);
+    return res.status(200).send(result);
   }
 
   @UseGuards(SessionGuard, RoleGuard)
@@ -141,7 +143,7 @@ export class AuthController {
       { data: { file_name: body.file_name }, user },
       'ai.recognizeFaces',
     );
-    return res.send(result);
+    return res.status(200).send(result);
   }
 
   @UseGuards(SessionGuard, RoleGuard)
@@ -152,6 +154,24 @@ export class AuthController {
       { user, data: {} },
       'ai.buildFaceClassifier',
     );
-    return res.send(result);
+    return res.status(200).send(result);
+  }
+
+  @UseGuards(SessionGuard, RoleGuard)
+  @Roles(UserRole.Admin)
+  @Post('faceSwap')
+  async faceSwap(
+    @Body() body: FaceSwapDto,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    if (!body.files && !body.users) {
+      throw new BadRequestException('No files or users provided to swap faces');
+    }
+    const result: any = await this.rmqService.request(
+      { user, data: body },
+      'ai.faceSwap',
+    );
+    return res.status(200).send(result);
   }
 }

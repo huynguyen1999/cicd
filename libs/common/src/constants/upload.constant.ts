@@ -3,7 +3,7 @@ import { FileExtension, UploadConfig } from '../interfaces';
 export enum UploadType {
   Avatar = 'avatar',
   MessageMedia = 'message-media',
-  Other = 'other',
+  Other = 'other', // will be cleared after a while
 }
 
 export const FILE_EXTENSIONS: Record<string, FileExtension> = {

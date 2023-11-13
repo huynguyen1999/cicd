@@ -8,8 +8,11 @@ import {
   JoinRequestStatus,
   JoinRoomDto,
   KickUserFromRoomDto,
+  NotificationStatus,
 } from '@app/common';
 import {
+  NotificationDocument,
+  NotificationRepository,
   Room,
   RoomDocument,
   RoomRepository,
@@ -24,6 +27,7 @@ export class RoomService {
   constructor(
     private readonly roomRepository: RoomRepository,
     private readonly userRepository: UserRepository,
+    private readonly notificationRepository: NotificationRepository,
   ) {}
   async createRoom(data: CreateRoomDto, user: User) {
     const userObjectId = new Types.ObjectId(user._id.toString());
@@ -67,7 +71,7 @@ export class RoomService {
   async joinRoom(data: JoinRoomDto, user: User) {
     const room = await this.roomRepository.findOne(
       { _id: data.room_id },
-      '+participants +join_requests',
+      '+participants +join_requests +created_by',
     );
     if (!room) {
       throw new BadRequestException('Room not found');
@@ -87,7 +91,7 @@ export class RoomService {
       time: new Date(),
     };
 
-    return await this.roomRepository.findOneAndUpdate(
+    const request = await this.roomRepository.findOneAndUpdate(
       {
         _id: data.room_id,
       },
@@ -97,6 +101,15 @@ export class RoomService {
         },
       },
     );
+
+    this.notificationRepository.create({
+      recipient: new Types.ObjectId(room.created_by.toString()),
+      title: 'Join room request',
+      message: `User ${user.email} request to join room ${room.name}`,
+      status: NotificationStatus.Unread,
+    } as NotificationDocument);
+
+    return request;
   }
 
   async handleJoinRequest(data: HandleJoinRequestDto, user: User) {
@@ -149,6 +162,14 @@ export class RoomService {
       { _id: data.room_id },
       updateData,
     );
+
+    this.notificationRepository.create({
+      recipient: new Types.ObjectId(room.join_requests[joinRequestIndex].user),
+      title: 'Join request notice',
+      message: `Your request status is switched to ${data.status}`,
+      status: NotificationStatus.Unread,
+    } as NotificationDocument);
+
     return {
       request: room.join_requests[joinRequestIndex],
       joined_user: joinedUser,
@@ -196,6 +217,14 @@ export class RoomService {
       { _id: data.room_id },
       { participants },
     );
+
+    this.notificationRepository.create({
+      recipient: new Types.ObjectId(userToBeKicked._id),
+      title: 'Kick notice',
+      message: `You are kicked from room ${room.name}`,
+      status: NotificationStatus.Unread,
+    } as NotificationDocument);
+
     return { user: userToBeKicked };
   }
 

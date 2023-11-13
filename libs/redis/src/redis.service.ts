@@ -83,8 +83,8 @@ export class RedisService {
     return await this.client.hDel(key, field);
   }
   async deleteMultipleKeys(pattern: string) {
-    const scanResult = await this.client.scan(0, { MATCH: pattern });
-    if (!scanResult.keys?.length) return null;
-    return await this.client.unlink(scanResult.keys || []);
+    const keys = await this.client.keys(pattern);
+    if (!keys.length) return null;
+    return await this.client.unlink(keys || []);
   }
 }

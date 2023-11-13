@@ -6,3 +6,4 @@ export * from './redis.constant';
 export * from './upload.constant';
 export * from './ai.constant';
 export * from './common.constant';
+export * from './notification.constant';

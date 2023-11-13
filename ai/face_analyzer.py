@@ -10,6 +10,7 @@ class FaceAnalyzer:
         if model_path is not None and os.path.exists(model_path):
             with open(model_path, "rb") as f:
                 self.model = pickle.load(f)
+                print("Face classifier loaded!")
         else:
             self.model = None
 

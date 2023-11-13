@@ -1,22 +1,34 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { promises as fsPromises, existsSync, mkdirSync } from 'fs';
+import { promises as fsPromises } from 'fs';
 import { fromBuffer } from 'file-type';
-import { UploadedFileRepository } from '@app/database';
-import { NSFWClassName, NSFW_THRESHOLD, UploadedFileStatus } from '@app/common';
+import {
+  NotificationDocument,
+  NotificationRepository,
+  UploadedFileRepository,
+  User,
+} from '@app/database';
+import {
+  NSFWClassName,
+  NSFW_THRESHOLD,
+  NotificationStatus,
+  UploadedFileStatus,
+} from '@app/common';
 import * as nsfw from 'nsfwjs';
 import * as tf from '@tensorflow/tfjs-node';
 import * as FileSystem from 'fs';
+import { Types } from 'mongoose';
 @Injectable()
 export class NSFWClassifierService implements OnModuleInit {
   constructor(
     private readonly uploadedFileRepository: UploadedFileRepository,
+    private readonly notificationRepository: NotificationRepository,
   ) {}
   private nsfwModel: nsfw.NSFWJS;
   async onModuleInit() {
     this.nsfwModel = await nsfw.load();
   }
 
-  async checkNSFW(fileName: string) {
+  async checkNSFW(fileName: string, user: User) {
     const file = await this.uploadedFileRepository.findOne({
       name: fileName,
       is_deleted: false,
@@ -64,6 +76,12 @@ export class NSFWClassifierService implements OnModuleInit {
           content: 'This file is restricted due to NSFW content',
         },
       };
+      this.notificationRepository.create({
+        recipient: new Types.ObjectId(user._id.toString()),
+        title: 'NSFW Content',
+        message: `The file [${file.original_name}] was flagged as NSFW`,
+        status: NotificationStatus.Unread,
+      } as NotificationDocument);
     }
     await this.uploadedFileRepository.findOneAndUpdate(
       { name: file.name },

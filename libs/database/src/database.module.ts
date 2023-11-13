@@ -5,6 +5,8 @@ import * as repositories from './repositories';
 import {
   Message,
   MessageSchema,
+  Notification,
+  NotificationSchema,
   RefreshToken,
   RefreshTokenSchema,
   Room,
@@ -32,6 +34,7 @@ import {
       { name: Session.name, schema: SessionSchema },
       { name: RefreshToken.name, schema: RefreshTokenSchema },
       { name: UploadedFile.name, schema: UploadedFileSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
   providers: [...Object.values(repositories)],

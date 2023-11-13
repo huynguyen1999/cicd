@@ -10,7 +10,10 @@ export class AxiosService {
     data: any = {},
     headers: any = {},
   ) {
-    const requestConfig: AxiosRequestConfig = { method, headers };
+    const requestConfig: AxiosRequestConfig = {
+      method,
+      headers,
+    };
     if (method === 'GET') {
       url += encodeGetParams(data);
     } else {

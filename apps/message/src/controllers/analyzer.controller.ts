@@ -19,13 +19,13 @@ export class MessageAnalyzerController {
     const { data, user } = payload;
     const translatedMessage =
       await this.translateService.translateTextToEnglish(data.message);
-    const toxicity = await this.analyzerService.analyze(
+    const isToxic = await this.analyzerService.analyze(
       {
         ...data,
         message: translatedMessage,
       },
       user,
     );
-    return { is_toxic: toxicity > 2 };
+    return { is_toxic: isToxic };
   }
 }
