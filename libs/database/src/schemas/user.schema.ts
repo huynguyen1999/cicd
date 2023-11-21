@@ -56,10 +56,11 @@ export class User extends AbstractDocument {
   settings?: any;
 
   @Prop({
+    type: String,
     default: UserRole.User,
     enum: Object.values(UserRole),
   })
-  role?: string;
+  role?: UserRole;
 
   @Prop({ type: Date, default: Date.now, select: false })
   date_of_registration?: Date;

@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AbstractDocument } from '../abstract.schema';
 import mongoose, { HydratedDocument } from 'mongoose';
-import { ReactionType } from '@app/common';
+import { MessageType, ReactionType } from '@app/common';
 
 @Schema()
 export class MessageSeenReceipt {
@@ -54,6 +54,9 @@ export class Message extends AbstractDocument {
 
   @Prop({})
   attachment?: string; // Attachment URL (optional)
+
+  @Prop({ type: String, enum: MessageType, default: MessageType.Text })
+  type: MessageType;
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,

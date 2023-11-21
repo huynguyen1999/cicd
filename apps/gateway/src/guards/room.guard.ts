@@ -26,7 +26,7 @@ export class RoomGuard implements CanActivate {
       },
       'room.checkUserInRoom',
     );
-    if (!result) {
+    if (!result?.data?.accessible) {
       throw new UnauthorizedException('User is not in the room');
     }
     return !!result;
@@ -45,5 +45,16 @@ export class RoomGuard implements CanActivate {
       user = client.handshake.headers.user;
     }
     return { roomId, user };
+  }
+
+  private addRoom(room: any, context: ExecutionContext) {
+    if (context.getType() === 'http') {
+      context.switchToHttp().getRequest().room = room;
+    } else if (context.getType() === 'ws') {
+      const client = context.switchToWs().getClient();
+      client.handshake.headers.room = room;
+    } else {
+      context.switchToRpc().getData().room = room;
+    }
   }
 }

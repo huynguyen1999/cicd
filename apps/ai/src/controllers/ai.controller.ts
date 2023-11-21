@@ -8,15 +8,19 @@ import {
   FaceRecognitionService,
   FaceSwapService,
   NSFWClassifierService,
+  OpenAIService,
   ToxicityService,
 } from '../service';
 import {
   AnalyzeFileWithAiDto,
-  BuildFaceClassifierDto,
+  ChatCompletionDto,
   FaceSwapDto,
   MessagingDto,
   RpcRequest,
+  SpeechToTextDto,
 } from '@app/common';
+import { SpeechToTextService } from '../service/speech-to-text.service';
+import { RpcException } from '@nestjs/microservices';
 
 @Controller()
 export class AiController {
@@ -25,6 +29,8 @@ export class AiController {
     private readonly nsfwClassifierService: NSFWClassifierService,
     private readonly faceRecognitionService: FaceRecognitionService,
     private readonly faceSwapService: FaceSwapService,
+    private readonly speechToTextService: SpeechToTextService,
+    private readonly openAIService: OpenAIService,
   ) {}
 
   @RabbitRPC({
@@ -100,7 +106,34 @@ export class AiController {
     queue: 'ai.faceSwap',
   })
   async faceSwap(@RabbitPayload() payload: RpcRequest<FaceSwapDto>) {
-    const result = this.faceSwapService.execute(payload.data);
+    const result = await this.faceSwapService.execute(payload.data);
+    return result;
+  }
+
+  @RabbitRPC({
+    routingKey: 'ai.speechToText',
+    exchange: 'exchange',
+    queue: 'ai.speechToText',
+  })
+  async speechToText(@RabbitPayload() payload: RpcRequest<SpeechToTextDto>) {
+    const { data, user } = payload;
+    const result = await this.speechToTextService.convert(data);
+    if (!result?.data?.text) {
+      throw new RpcException("Can't convert speech to text");
+    }
+    return result.data.text;
+  }
+
+  @RabbitRPC({
+    routingKey: 'ai.chatCompletion',
+    exchange: 'exchange',
+    queue: 'ai.chatCompletion',
+  })
+  async chatCompletion(
+    @RabbitPayload() payload: RpcRequest<ChatCompletionDto>,
+  ) {
+    const { data } = payload;
+    const result = await this.openAIService.chatCompletion(data.prompt);
     return result;
   }
 }

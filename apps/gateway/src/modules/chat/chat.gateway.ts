@@ -16,15 +16,17 @@ import {
   WsRoomGuard,
   WsThrottlerGuard,
 } from '../../guards';
-import { User } from '@app/database';
+import { Room, User } from '@app/database';
 import { RedisService } from '@app/redis';
 import { Adapter } from 'socket.io-adapter';
 import {
   ConnectRoomDto,
+  CurrentRoom,
   CurrentUser,
   DeleteMessagesDto,
   EditMessageDto,
   GetUsersStatusDto,
+  MessageType,
   MessagingDto,
   ReactMessageDto,
   SeenMessagesDto,
@@ -169,7 +171,6 @@ export class ChatGateway
   async onNewMessage(
     @CurrentUser() user: User,
     @MessageBody() body: MessagingDto,
-    @ConnectedSocket() client: Socket,
   ) {
     const result = await this.rmqService.request(
       { data: body, user },
@@ -179,6 +180,9 @@ export class ChatGateway
     this.server.to(body.room_id).emit('roomNewMessages', {
       messages: [result.data],
     });
+
+    if (!result?.data?.content) return;
+
     const analyzeResult = await this.rmqService.request(
       { data: { ...body, message_id: result.data._id }, user },
       'message.analyzeToxicity',
@@ -186,6 +190,36 @@ export class ChatGateway
     if (analyzeResult.data.is_toxic) {
       this.server.to(body.room_id).emit('roomToxicMessages', {
         messages: [{ _id: result.data._id }],
+      });
+    }
+
+    // handle bot message 
+    if (!body.ask_bot) return;
+
+    const promptResult = await this.rmqService.request(
+      {
+        data: {
+          prompt: `Let's think step by step and answer the following question/request: "${result.data?.content}"`,
+        },
+        user,
+      },
+      'ai.chatCompletion',
+    );
+    if (!promptResult.success) return;
+    const botMessageResult = await this.rmqService.request(
+      {
+        data: {
+          message: promptResult.data,
+          room_id: body.room_id,
+          type: MessageType.Text,
+          is_from_bot: true,
+        },
+      },
+      'chat.message',
+    );
+    if (botMessageResult.success) {
+      this.server.to(body.room_id).emit('roomNewMessages', {
+        messages: [botMessageResult.data],
       });
     }
   }

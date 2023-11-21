@@ -58,6 +58,14 @@ export const FILE_EXTENSIONS: Record<string, FileExtension> = {
   Z: {
     ext: 'z',
   },
+  MP3: {
+    ext: 'mp3',
+    mime: 'audio/mpeg',
+  },
+  WAV: {
+    ext: 'wav',
+    mime: 'audio/wav',
+  },
 };
 
 export const TYPE_UPLOAD_CONFIGS: Record<string, UploadConfig> = {

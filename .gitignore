@@ -37,3 +37,4 @@ lerna-debug.log*
 /public/avatar
 /pubic/message-media
 /ai/__pycache__
+/client/node_modules

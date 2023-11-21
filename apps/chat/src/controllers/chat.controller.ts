@@ -17,6 +17,7 @@ import { StsAuthGuard } from '@app/sts-auth';
 @Controller()
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
+  
   @RabbitRPC({
     routingKey: 'chat.message',
     exchange: 'exchange',
@@ -26,6 +27,7 @@ export class ChatController {
     const { data, user } = payload;
     return await this.chatService.handleNewMessage(data, user);
   }
+
   @RabbitRPC({
     routingKey: 'chat.notice',
     exchange: 'exchange',

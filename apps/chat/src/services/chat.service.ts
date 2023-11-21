@@ -3,21 +3,24 @@ import {
   DeleteMessagesDto,
   EditMessageDto,
   GetMessagesDto,
+  MessageType,
   MessagingDto,
   ReactMessageDto,
   SeenMessagesDto,
   UploadType,
   UploadedFileStatus,
+  UserRole,
 } from '@app/common';
 import {
-  Message,
   MessageDocument,
   MessageRepository,
   UploadedFileRepository,
   User,
+  UserRepository,
 } from '@app/database';
 import { Types } from 'mongoose';
 import { RpcException } from '@nestjs/microservices';
+import { RabbitmqService } from '@app/rabbitmq';
 import * as DayJS from 'dayjs';
 import * as FileSystem from 'fs';
 @Injectable()
@@ -25,14 +28,21 @@ export class ChatService {
   constructor(
     private readonly messageRepository: MessageRepository,
     private readonly uploadedFileRepository: UploadedFileRepository,
+    private readonly rmqService: RabbitmqService,
+    private readonly userRepository: UserRepository,
   ) {}
 
   async handleNewMessage(data: MessagingDto, user: User) {
-    const { room_id, message, file_name } = data;
+    if (data.is_from_bot) {
+      user = await this.userRepository.findOne({ role: UserRole.Bot });
+    }
+
+    const { room_id, message, file_name: fileName, type } = data;
 
     const messageData: any = {
       room: new Types.ObjectId(room_id),
       sender: new Types.ObjectId(user._id),
+      type,
       content: message,
       seen_by: [
         {
@@ -42,9 +52,9 @@ export class ChatService {
       ],
     };
 
-    if (file_name) {
+    if (fileName) {
       const file = await this.uploadedFileRepository.findOne({
-        name: file_name,
+        name: fileName,
         is_deleted: false,
         status: UploadedFileStatus.Active,
         upload_type: UploadType.MessageMedia,
@@ -53,7 +63,19 @@ export class ChatService {
         throw new RpcException(`File not found`);
       }
       messageData.attachment = file.path;
+
+      if (type === MessageType.Speech) {
+        const speechToTextContent = await this.rmqService.request(
+          { user, data: { file_path: file.path } },
+          'ai.speechToText',
+        );
+        if (!speechToTextContent.data) {
+          throw new RpcException(`Can't convert speech to text`);
+        }
+        messageData.content = speechToTextContent.data;
+      }
     }
+
     return await this.messageRepository.create(messageData as MessageDocument);
   }
   async handleNotice(data: MessagingDto) {

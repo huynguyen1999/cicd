@@ -6,3 +6,9 @@ export enum ReactionType {
   Sad = 'sad',
   Angry = 'angry',
 }
+
+export enum MessageType {
+  Media = 'media',
+  Speech = 'speech',
+  Text = 'text',
+}

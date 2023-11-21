@@ -10,4 +10,5 @@ export enum UserRole {
   PremiumUser = 'premium_user',
   Admin = 'admin',
   Moderator = 'moderator',
+  Bot = 'bot',
 }

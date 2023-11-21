@@ -184,7 +184,15 @@ export class RoomService {
     if (!room) {
       throw new BadRequestException('Room not found');
     }
-    return this.userIsAlreadyInRoom(room, user);
+    if (this.userIsAlreadyInRoom(room, user)) {
+      return {
+        accessible: true,
+        room,
+      };
+    }
+    return {
+      accessible: false,
+    };
   }
 
   async kickUserFromRoom(data: KickUserFromRoomDto, admin: User) {

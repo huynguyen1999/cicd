@@ -20,7 +20,6 @@ export class FaceSwapService {
     targetPath: string,
     outputPath: string,
   ) {
-    console.log(outputPath);
     return new Promise((resolve, reject) => {
       const command = spawn(
         'python',

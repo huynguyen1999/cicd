@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { AxiosService } from '@app/axios';
 import { ConfigService } from '@nestjs/config';
 import { UploadedFileRepository, User, UserRepository } from '@app/database';
-import { compare } from 'bcryptjs';
 import { UploadType, UploadedFileStatus } from '@app/common';
 
 @Injectable()
