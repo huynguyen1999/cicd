@@ -101,8 +101,7 @@ describe('AuthService', () => {
 
     describe('logout', () => {
       it('should revoke session and update user status on logout', async () => {
-        // Mock necessary dependencies and test the logout method
-        // Ensure that the method behaves as expected
+
       });
     });
 
