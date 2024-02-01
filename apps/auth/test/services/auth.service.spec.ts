@@ -109,6 +109,7 @@ describe('AuthService', () => {
       it('should return user on valid session', async () => {
         // Mock necessary dependencies and test the getUserFromSession method
         // Ensure that the method returns the expected result
+        expect(1+1).toEqual(3);
       });
 
       it('should throw UnauthorizedException on invalid session', async () => {
