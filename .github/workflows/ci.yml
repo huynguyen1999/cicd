@@ -1,14 +1,8 @@
-name: Github Actions Testing Workflow
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
-
+name: CI
+on: [ push ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     strategy:
