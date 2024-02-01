@@ -35,7 +35,9 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 /public/avatar
-/pubic/message-media
+/public/message-media
+/public/other
 /ai/__pycache__
 /client/node_modules
 /ai
+.vscode

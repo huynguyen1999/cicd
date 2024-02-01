@@ -59,7 +59,6 @@ export class FaceRecognitionService {
     if (!result.data) {
       throw new Error('No face features found');
     }
-    console.log(result.data);
     const { data: recognitionResult } = result.data;
     const recognizedUsers = [];
     for await (const faceRecognition of recognitionResult) {
@@ -77,7 +76,6 @@ export class FaceRecognitionService {
         target_encoding: recognizedUser.face_features.values,
         source_encoding: face_features,
       };
-      console.log(data);
       const compareResult = await this.axiosService.request(
         compareFaceUrl,
         'POST',

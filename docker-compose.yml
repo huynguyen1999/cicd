@@ -1,0 +1,141 @@
+version: "2.4"
+
+services:
+  mongodb:
+    image: mongo:6.0.6
+    container_name: mongodb
+    networks:
+      - iceh-network
+    volumes:
+      - /opt/homebrew/var/mongodb:/data/db
+      - /opt/homebrew/etc/mongod.conf:/etc/mongod.conf
+      - /opt/homebrew/var/log/mongodb:/var/log/mongodb
+    ports:
+      - 27017:27017
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: "rabbitmq"
+    container_name: rabbitmq
+    networks:
+      - iceh-network
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - iceh-network
+    ports:
+      - 6379:6379
+
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+      target: production
+    command: node dist/apps/gateway/main
+    env_file:
+      - ./apps/gateway/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - iceh-network
+    ports:
+      - 3000:3000 # http
+      - 3001:3001 # websocket
+
+  auth:
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+      target: production 
+    command: node dist/apps/auth/main
+    env_file:
+      - ./apps/auth/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - iceh-network
+    ports:
+      - 4000:4000
+
+  chat:
+    build:
+      context: .
+      dockerfile: ./apps/chat/Dockerfile
+      target: production 
+    command: node dist/apps/chat/main
+    env_file:
+      - ./apps/chat/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - iceh-network
+    ports:
+      - 4001:4001
+
+  message:
+    build:
+      context: .
+      dockerfile: ./apps/message/Dockerfile
+      target: production 
+    command: node dist/apps/message/main
+    env_file:
+      - ./apps/message/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - iceh-network
+    ports:
+      - 4002:4002
+
+  ai:
+    build:
+      context: .
+      dockerfile: ./apps/ai/Dockerfile
+      target: production
+    command: node dist/apps/ai/main
+    env_file:
+      - ./apps/ai/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - iceh-network
+    ports:
+      - 4004:4004
+
+networks:
+  iceh-network:

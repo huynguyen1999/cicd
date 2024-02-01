@@ -46,7 +46,7 @@ export class NSFWClassifierService implements OnModuleInit {
     }
     // prediction
     const image: any = tf.node.decodeImage(fileBuffer, 3);
-    let predictions = await this.nsfwModel.classify(image);
+    const predictions = await this.nsfwModel.classify(image);
     image.dispose();
     const result = predictions.reduce((acc: any, cur: nsfw.predictionType) => {
       if (cur.className && cur.probability) {

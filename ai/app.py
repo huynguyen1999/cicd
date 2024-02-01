@@ -3,10 +3,12 @@ from flask import Flask, request, jsonify, Response
 from toxicity_analyzer import ToxicityAnalyzer
 from face_analyzer import FaceAnalyzer
 from speech_analyzer import SpeechAnalyzer
+from voice_cloner import VoiceCloner
 
 global toxicity_analyzer
 global face_recognizer
 global speech_analyzer
+global voice_cloner
 
 app = Flask(__name__)
 
@@ -67,8 +69,18 @@ def detect_language():
     return jsonify({"success": True, "data": {"language": language}})
 
 
+@app.route("/convertVoice", methods=["POST"])
+def convert_voice():
+    base_speaker = request.json["base_speaker"]
+    reference_speaker = request.json["reference_speaker"]
+    text = request.json["text"]
+    result = voice_cloner.clone_voice(base_speaker, reference_speaker, text)
+    return jsonify({"success": result})
+
+
 if __name__ == "__main__":
     toxicity_analyzer = ToxicityAnalyzer()
     face_recognizer = FaceAnalyzer()
     speech_analyzer = SpeechAnalyzer()
-    app.run(debug=True, port=8000)
+    voice_cloner = VoiceCloner()
+    app.run(debug=True, host="0.0.0.0", port=8000)

@@ -21,7 +21,7 @@ export class LoginDto {
   @IsNumber()
   @Min(60000) // 1 minute
   @Max(86400000) // 1 day
-  duration: number = 86400000; // in milliseconds, default one day
+  duration: number; // in milliseconds, default one day
 
   @IsOptional()
   @IsString()

@@ -10,6 +10,7 @@ import * as FileSystem from 'fs';
 import { verifySignature } from '../../common/src';
 import { RpcException } from '@nestjs/microservices';
 
+// Service to service
 @Injectable()
 export class StsAuthGuard implements CanActivate, OnModuleInit {
   private publicKeys: Record<string, string> = {};

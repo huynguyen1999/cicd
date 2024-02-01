@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { FaceSwapDto } from '@app/common';
 import { spawn } from 'node:child_process';
 import { UploadedFileRepository, UserRepository } from '@app/database';
-import { String } from 'aws-sdk/clients/appstream';
 import { RpcException } from '@nestjs/microservices';
 import { join } from 'path';
-import { v4 as uuid } from 'uuid';
 import { existsSync } from 'node:fs';
 
 @Injectable()
@@ -15,6 +13,7 @@ export class FaceSwapService {
     private readonly uploadedFileRepository: UploadedFileRepository,
   ) {}
 
+  // TODO: Migrate face swap process to AI service
   async requestFaceSwapFromRoop(
     sourcePath: string,
     targetPath: string,
@@ -32,7 +31,7 @@ export class FaceSwapService {
           `--output`,
           outputPath,
         ],
-        { cwd: '/Users/admin/Source/DataScience/roop' },
+        { cwd: '/usr/src/roop' },
       );
       command.stdout.on('data', (data) => console.log(data.toString()));
       command.stdout.on('error', (err) => console.log(err.toString()));
@@ -43,7 +42,7 @@ export class FaceSwapService {
 
   async execute(data: FaceSwapDto) {
     const { files, users } = data;
-    let sourceFilePath: string, targetFilePath: String;
+    let sourceFilePath: string, targetFilePath: string;
     if (users) {
       const { source, target } = users;
       const [sourceUser, targetUser] = await Promise.all([
