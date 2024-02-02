@@ -9,10 +9,9 @@ on:
 jobs:
   build:
     if: github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v2
     - name: Build Docker Image
-      run: docker compose build
-    
+      run: docker-compose build
