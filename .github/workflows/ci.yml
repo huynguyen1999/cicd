@@ -10,13 +10,11 @@ jobs:
         node-version: [16.20.2]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use NodeJS
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with: 
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - name: Install yarn
-      run: npm install -g yarn
-    - run: npm install
-    - run: npm run test
+        cache: 'yarn'
+    - run: yarn install
+    - run: yarn test
