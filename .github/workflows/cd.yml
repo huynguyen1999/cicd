@@ -22,5 +22,5 @@ jobs:
       run: docker push iceh/cicd_auth:latest
     - name: SSH to run VM script
       run: echo "SSH to run VM script"
-    - name: Build Docker Image Clean-up
-      run: docker-compose down --rmi all
+    # - name: Build Docker Image Clean-up
+      # run: docker-compose down --rmi all
