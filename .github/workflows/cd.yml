@@ -21,15 +21,14 @@ jobs:
     - name: Push docker images
       env: 
         username: ${{ secrets.DOCKERHUB_USERNAME }}
-      run: |
-        docker tag cicd_auth $username/cicd_auth && docker push $username/cicd_auth
+      run: docker tag cicd_auth $username/cicd_auth && docker push $username/cicd_auth
     - name: executing remote ssh commands using password
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         password: ${{ secrets.SSH_PASSWORD }}
-        port: ${{ secrets.PORT }}
+        port: ${{ secrets.SSH_PORT }}
         script: ls -a
     - name: Build Docker Image Clean-up
       run: docker-compose down --rmi all
