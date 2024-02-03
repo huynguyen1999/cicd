@@ -18,4 +18,4 @@ jobs:
     - name: SSH to run VM script
       run: echo "SSH to run VM script"
     - name: Post-step to clear up
-      run: docker-compose down
+      run: docker-compose down --rmi all
