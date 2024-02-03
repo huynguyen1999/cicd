@@ -20,15 +20,19 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Push docker images
       env: 
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-      run: docker tag cicd_auth $username/cicd_auth && docker push $username/cicd_auth
+        tag_name: ${{ secrets.DOCKERHUB_USERNAME }}/cicd_auth
+      run: docker tag cicd_auth $tag_name && docker push $tag_name && docker rmi $tag_name
     - name: executing remote ssh commands using password
+      # have to configure File Sharing in Docker Desktop for path /_work to bind volume 
       uses: appleboy/ssh-action@v1.0.3
+      env:
+        docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         password: ${{ secrets.SSH_PASSWORD }}
         port: ${{ secrets.SSH_PORT }}
-        script: ls -a
+        script: |
+          cd Source && docker pull $docker_username/cicd_auth
     - name: Build Docker Image Clean-up
       run: docker-compose down --rmi all
