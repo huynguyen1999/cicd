@@ -13,3 +13,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build Docker Image
       run: docker-compose build
+    - name: Push docker images
+      run: echo "Push images to hub"
+    - name: SSH to run VM script
+      run: echo "SSH to run VM script"
+    - name: Post-step to clear up
+      run: docker-compose down
