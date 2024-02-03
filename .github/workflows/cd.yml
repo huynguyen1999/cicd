@@ -23,7 +23,13 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
       run: |
         docker tag cicd_auth $username/cicd_auth && docker push $username/cicd_auth
-    - name: SSH to run VM script
-      run: echo "SSH to run VM script"
-    # - name: Build Docker Image Clean-up
-      # run: docker-compose down --rmi all
+    - name: executing remote ssh commands using password
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        password: ${{ secrets.SSH_PASSWORD }}
+        port: ${{ secrets.PORT }}
+        script: ls -a
+    - name: Build Docker Image Clean-up
+      run: docker-compose down --rmi all
