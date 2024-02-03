@@ -19,7 +19,7 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Push docker images
-      run: echo "Push images to hub"
+      run: docker push iceh/cicd_auth:latest
     - name: SSH to run VM script
       run: echo "SSH to run VM script"
     - name: Build Docker Image Clean-up
